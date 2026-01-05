@@ -398,6 +398,163 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
             </div>
           </>
         )}
+
+        {/* Cruises-specific Filters */}
+        {vertical === 'cruises' && (
+          <>
+            <div>
+              <h4 className="text-sm font-bold text-gray-700 mb-3">Cruise Line</h4>
+              <div className="flex flex-wrap gap-2">
+                {['Royal Caribbean', 'Carnival', 'Norwegian', 'Princess', 'Celebrity', 'MSC', 'Holland America'].map((line) => {
+                  const isSelected = localFilters.cruiseLines?.includes(line);
+                  return (
+                    <button
+                      key={line}
+                      onClick={() => {
+                        const current = localFilters.cruiseLines || [];
+                        const updated = isSelected
+                          ? current.filter(l => l !== line)
+                          : [...current, line];
+                        updateFilter({ cruiseLines: updated.length > 0 ? updated : undefined });
+                      }}
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                        isSelected
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {line}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-bold text-gray-700 mb-3">Region</h4>
+              <div className="flex flex-wrap gap-2">
+                {['Caribbean', 'Mediterranean', 'Alaska', 'Bahamas', 'Mexican Riviera', 'Northern Europe', 'Asia'].map((region) => {
+                  const isSelected = localFilters.cruiseRegions?.includes(region);
+                  return (
+                    <button
+                      key={region}
+                      onClick={() => {
+                        const current = localFilters.cruiseRegions || [];
+                        const updated = isSelected
+                          ? current.filter(r => r !== region)
+                          : [...current, region];
+                        updateFilter({ cruiseRegions: updated.length > 0 ? updated : undefined });
+                      }}
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                        isSelected
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {region}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-bold text-gray-700 mb-3">Duration (Nights)</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Min</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={localFilters.cruiseDuration?.min || ''}
+                    onChange={(e) => updateFilter({ 
+                      cruiseDuration: { 
+                        ...localFilters.cruiseDuration, 
+                        min: e.target.value ? Number(e.target.value) : undefined 
+                      } 
+                    })}
+                    placeholder="1"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Max</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={localFilters.cruiseDuration?.max || ''}
+                    onChange={(e) => updateFilter({ 
+                      cruiseDuration: { 
+                        ...localFilters.cruiseDuration, 
+                        max: e.target.value ? Number(e.target.value) : undefined 
+                      } 
+                    })}
+                    placeholder="14"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-bold text-gray-700 mb-3">Cabin Type</h4>
+              <div className="flex flex-wrap gap-2">
+                {['Interior', 'Ocean View', 'Balcony', 'Suite'].map((cabin) => {
+                  const isSelected = localFilters.cruiseCabinType?.includes(cabin);
+                  return (
+                    <button
+                      key={cabin}
+                      onClick={() => {
+                        const current = localFilters.cruiseCabinType || [];
+                        const updated = isSelected
+                          ? current.filter(c => c !== cabin)
+                          : [...current, cabin];
+                        updateFilter({ cruiseCabinType: updated.length > 0 ? updated : undefined });
+                      }}
+                      className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                        isSelected
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {cabin}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-bold text-gray-700 mb-3">Guest Rating</h4>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={localFilters.minRating || 0}
+                  onChange={(e) => updateFilter({ minRating: Number(e.target.value) || undefined })}
+                  className="flex-1 accent-blue-500"
+                />
+                <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-right">
+                  {localFilters.minRating ? localFilters.minRating.toFixed(1) : 'Any'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localFilters.refundable || false}
+                  onChange={(e) => updateFilter({ refundable: e.target.checked || undefined })}
+                  className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <span className="text-sm font-bold text-gray-700">Free Cancellation</span>
+              </label>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -332,6 +332,73 @@ All notable changes to this project will be documented in this file.
       - `__tests__/lib/packages/bundler.test.ts` - Package bundling logic
     - Test coverage configuration (60% threshold)
     - All tests passing
+  - **Cruises Functionality (Task 2.4)** - Complete cruise search and display functionality:
+    - Added cruise-specific fields to `Offer` type:
+      - `cruise_line`, `cruise_region`, `cruise_duration`, `cruise_ports`, `cruise_ship`
+      - `cruise_departure_port`, `cruise_itinerary`, `cruise_cabin_type`
+    - Created `CruiseOfferCard` component:
+      - Displays cruise details with ship, region, duration, ports of call
+      - Shows itinerary preview and cabin type
+      - Integrated affiliate tracking and currency conversion
+    - Added cruise filters to `FilterState`:
+      - Cruise lines, regions, duration range, cabin types, departure ports
+    - Implemented cruise normalization in `normalizer.ts`
+    - Added cruise filter logic in `filters.ts`
+    - Added cruise-specific filters to `FiltersPanel`:
+      - Cruise line selection, region selection, duration range, cabin type, rating, cancellation
+    - Added mock cruise data to `ExpediaAdapter`:
+      - Multiple cruise lines (Royal Caribbean, Carnival, Norwegian, etc.)
+      - Various regions (Caribbean, Mediterranean, Alaska, etc.)
+      - Different durations and cabin types
+    - Integrated `CruiseOfferCard` in `App.tsx` for cruises vertical
+    - Updated `ExpediaAdapter` to support cruises vertical
+  - **Improvements & Refinements** - Code quality and user experience enhancements:
+    - **Accessibility Improvements**:
+      - Added `aria-label` attributes to interactive buttons
+      - Added `aria-expanded` and `aria-haspopup` to user menu button
+      - Added `aria-pressed` to vertical tab buttons
+      - Added `role="status"` and `sr-only` text to loading spinners
+      - Improved keyboard navigation support
+    - **Error Handling**:
+      - Created `app/error.tsx` for Next.js error boundary with user-friendly UI
+      - Created `app/not-found.tsx` for 404 pages with navigation options
+      - Created `app/loading.tsx` for loading states
+      - Enhanced error messages with development mode details
+    - **UI Components**:
+      - Created `LoadingSpinner` component for consistent loading states
+      - Improved error boundary UI with retry and home navigation
+      - Added proper semantic HTML and ARIA attributes throughout
+    - **Code Quality**:
+      - Fixed accessibility linting errors
+      - Improved user feedback for loading and error states
+      - Enhanced keyboard navigation support
+  - **Documentation & Deployment (Task 3.5)** - Comprehensive documentation and deployment guides:
+    - Enhanced `README.md` with:
+      - Complete setup instructions
+      - Detailed environment variable documentation
+      - API documentation with examples
+      - Project structure overview
+      - Testing instructions
+      - Deployment guide
+      - Development guidelines
+    - Created `DEPLOYMENT.md`:
+      - Pre-deployment checklist
+      - Step-by-step deployment instructions
+      - Post-deployment configuration
+      - Rollback procedures
+      - Production best practices
+    - Created `TROUBLESHOOTING.md`:
+      - Common development issues
+      - Build and runtime errors
+      - Database issues
+      - Testing problems
+      - Deployment troubleshooting
+      - Performance optimization tips
+    - Created `.env.example`:
+      - All required environment variables
+      - Optional variables documented
+      - Links to where to get API keys
+    - Updated `vercel.json` with production-ready configuration
   - Image optimization:
     - Converted all `<img>` tags to Next.js `<Image>` component:
       - `components/OfferCard.tsx` - Optimized offer images

@@ -12,7 +12,7 @@ import { DEFAULT_EPC } from '@/constants';
  */
 export class ExpediaAdapter implements ProviderAdapter {
   readonly name = 'expedia';
-  readonly supportedVerticals: Vertical[] = ['flights', 'stays', 'cars', 'things-to-do'];
+  readonly supportedVerticals: Vertical[] = ['flights', 'stays', 'cars', 'things-to-do', 'cruises'];
   
   private config: ProviderConfig;
   private defaultEpc = DEFAULT_EPC.stays;

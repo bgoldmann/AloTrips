@@ -132,19 +132,34 @@ export function normalizeOffer(
     offer.mileage_limit = raw.mileage_limit ?? raw.mileage ?? raw.mileage_policy ?? 'Unlimited';
   }
 
-  if (vertical === 'things-to-do') {
-    offer.activity_category = raw.activity_category ?? raw.category ?? raw.type;
-    offer.activity_location = raw.activity_location ?? raw.location ?? raw.address;
-    offer.activity_duration = raw.activity_duration ?? raw.duration ?? raw.duration_text;
-    offer.activity_start_time = raw.activity_start_time ?? raw.start_time ?? raw.startTime;
-    offer.activity_includes = Array.isArray(raw.activity_includes)
-      ? raw.activity_includes
-      : (raw.includes ?? raw.whats_included ?? []);
-    offer.latitude = raw.latitude ?? raw.lat;
-    offer.longitude = raw.longitude ?? raw.lng ?? raw.lon;
-  }
+      if (vertical === 'things-to-do') {
+        offer.activity_category = raw.activity_category ?? raw.category ?? raw.type;
+        offer.activity_location = raw.activity_location ?? raw.location ?? raw.address;
+        offer.activity_duration = raw.activity_duration ?? raw.duration ?? raw.duration_text;
+        offer.activity_start_time = raw.activity_start_time ?? raw.start_time ?? raw.startTime;
+        offer.activity_includes = Array.isArray(raw.activity_includes)
+          ? raw.activity_includes
+          : (raw.includes ?? raw.whats_included ?? []);
+        offer.latitude = raw.latitude ?? raw.lat;
+        offer.longitude = raw.longitude ?? raw.lng ?? raw.lon;
+      }
 
-  return offer;
+      if (vertical === 'cruises') {
+        offer.cruise_line = raw.cruise_line ?? raw.cruiseLine ?? raw.line;
+        offer.cruise_region = raw.cruise_region ?? raw.region ?? raw.destination_region;
+        offer.cruise_duration = raw.cruise_duration ?? raw.duration_nights ?? raw.nights;
+        offer.cruise_ports = Array.isArray(raw.cruise_ports)
+          ? raw.cruise_ports
+          : (raw.ports ?? raw.ports_of_call ?? []);
+        offer.cruise_ship = raw.cruise_ship ?? raw.ship_name ?? raw.ship;
+        offer.cruise_departure_port = raw.cruise_departure_port ?? raw.departure_port ?? raw.departurePort;
+        offer.cruise_itinerary = raw.cruise_itinerary ?? raw.itinerary ?? raw.description;
+        offer.cruise_cabin_type = raw.cruise_cabin_type ?? raw.cabin_type ?? raw.cabinType;
+        // For cruises, subtitle could be the cruise line or ship
+        offer.subtitle = offer.cruise_line || offer.cruise_ship || offer.subtitle;
+      }
+
+      return offer;
 }
 
 /**

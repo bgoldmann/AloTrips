@@ -24,6 +24,7 @@ import UpsellRecommendation from './UpsellRecommendation';
 import MapView from './MapView';
 import PackageOfferCard from './PackageOfferCard';
 import ActivityOfferCard from './ActivityOfferCard';
+import CruiseOfferCard from './CruiseOfferCard';
 import { filterAndSortOffers } from '@/lib/filters';
 import { FilterState, SortOption } from '@/types';
 import { getUpsellRecommendation, TripContext } from '@/lib/upsells/rules';
@@ -333,10 +334,13 @@ const App: React.FC = () => {
 
              {/* User Menu */}
              <div className="relative z-50">
-               <button 
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="hidden md:flex items-center gap-2 hover:bg-orange-50 pl-2 pr-4 py-1.5 rounded-full transition-all border border-transparent hover:border-orange-100"
-               >
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="hidden md:flex items-center gap-2 hover:bg-orange-50 pl-2 pr-4 py-1.5 rounded-full transition-all border border-transparent hover:border-orange-100"
+                    aria-label="User menu"
+                    aria-expanded={isUserMenuOpen}
+                    aria-haspopup="true"
+                  >
                  <Image src={avatar} width={32} height={32} className="rounded-full border border-gray-200" alt="Avatar" unoptimized={avatar?.includes('pravatar.cc')}/>
                  <span className="font-semibold text-gray-700">{displayName}</span>
                </button>
@@ -375,8 +379,11 @@ const App: React.FC = () => {
                )}
              </div>
 
-             <button className="md:hidden p-2 hover:bg-orange-50 rounded-lg text-gray-600">
-               <Menu size={24}/>
+             <button 
+               className="md:hidden p-2 hover:bg-orange-50 rounded-lg text-gray-600"
+               aria-label="Open mobile menu"
+             >
+               <Menu size={24} aria-hidden="true" />
              </button>
           </div>
         </div>
@@ -488,11 +495,12 @@ const App: React.FC = () => {
                           onClick={handleSearch}
                           disabled={isSearching}
                           className="w-full h-16 bg-gradient-to-br from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-2xl flex items-center justify-center transition-all shadow-lg hover:shadow-orange-300/50 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                          aria-label={isSearching ? 'Searching for travel deals...' : 'Search for travel deals'}
                         >
                           {isSearching ? (
-                            <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true"></div>
                           ) : (
-                            <Search size={28} strokeWidth={2.5} />
+                            <Search size={28} strokeWidth={2.5} aria-hidden="true" />
                           )}
                         </button>
                      </div>
@@ -654,20 +662,22 @@ const App: React.FC = () => {
                              >
                                {activeVertical === 'things-to-do' ? (
                                  <ActivityOfferCard 
-                                   offer={{
-                                     ...offer,
-                                     currency: currency,
-                                     total_price: currency === 'EUR' ? offer.total_price * 0.92 : offer.total_price
-                                   }} 
+                                   offer={offer}
+                                   targetCurrency={currency}
+                                   exchangeRate={exchangeRate}
+                                 />
+                               ) : activeVertical === 'cruises' ? (
+                                 <CruiseOfferCard
+                                   offer={offer}
+                                   targetCurrency={currency}
+                                   exchangeRate={exchangeRate}
                                  />
                                ) : (
                                  <OfferCard 
-                                   offer={{
-                                      ...offer,
-                                      currency: currency,
-                                      total_price: currency === 'EUR' ? offer.total_price * 0.92 : offer.total_price
-                                   }} 
-                                   vertical={activeVertical} 
+                                   offer={offer}
+                                   vertical={activeVertical}
+                                   targetCurrency={currency}
+                                   exchangeRate={exchangeRate} 
                                  />
                                )}
                              </div>

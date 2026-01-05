@@ -62,7 +62,13 @@ npm install
 
 ### 4. Configure Environment Variables
 
-Create a `.env.local` file in the root directory:
+Copy the example environment file and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your actual credentials:
 
 ```env
 # Supabase Configuration
@@ -70,20 +76,37 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# Gemini API (Optional)
+# Gemini API (Optional - for AI assistant)
 GEMINI_API_KEY=your_gemini_api_key
 NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+
+# Exchange Rate API (Optional - for currency conversion)
+EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
 
 # App Configuration
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-You can find your Supabase credentials in:
-- Project Settings → API → Project URL (NEXT_PUBLIC_SUPABASE_URL)
-- Project Settings → API → anon/public key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
-- Project Settings → API → service_role key (SUPABASE_SERVICE_ROLE_KEY)
+**Where to find your credentials:**
 
-### 5. Run Development Server
+- **Supabase**: Project Settings → API
+  - `NEXT_PUBLIC_SUPABASE_URL`: Project URL
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: anon/public key
+  - `SUPABASE_SERVICE_ROLE_KEY`: service_role key (keep secret!)
+  
+- **Google Gemini**: [Get API Key](https://makersuite.google.com/app/apikey)
+
+- **Exchange Rate API**: [Get API Key](https://www.exchangerate-api.com/) (free tier available)
+
+### 5. Run Database Migrations
+
+In your Supabase dashboard SQL Editor, run the migrations in order:
+
+1. `supabase/migrations/001_initial_schema.sql` - Creates main tables (offers, users, bookings)
+2. `supabase/migrations/002_affiliate_tracking.sql` - Creates affiliate tracking tables
+3. (Optional) `supabase/seed.sql` - Populates sample data
+
+### 6. Run Development Server
 
 ```bash
 npm run dev
@@ -91,28 +114,100 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Deployment to Vercel
+### 7. Run Tests
 
-### Option 1: Deploy via Vercel Dashboard
+```bash
+# Run all tests
+npm test
 
-1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com) and import your repository
-3. Add environment variables in Vercel dashboard:
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+## 🚀 Deployment
+
+### Deploy to Vercel
+
+#### Option 1: Deploy via Vercel Dashboard (Recommended)
+
+1. **Push your code to GitHub**
+   ```bash
+   git add .
+   git commit -m "Initial commit"
+   git push origin main
+   ```
+
+2. **Import to Vercel**
+   - Go to [vercel.com](https://vercel.com) and sign in
+   - Click "Add New Project"
+   - Import your GitHub repository
+   - Vercel will auto-detect Next.js settings
+
+3. **Configure Environment Variables**
+   In the Vercel project settings, add all environment variables from `.env.example`:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `GEMINI_API_KEY` (optional)
    - `NEXT_PUBLIC_GEMINI_API_KEY` (optional)
-4. Deploy!
+   - `EXCHANGE_RATE_API_KEY` (optional)
+   - `NEXT_PUBLIC_APP_URL` (set to your Vercel domain)
 
-### Option 2: Deploy via CLI
+4. **Deploy!**
+   - Click "Deploy"
+   - Wait for build to complete
+   - Your app will be live at `your-project.vercel.app`
+
+#### Option 2: Deploy via Vercel CLI
 
 ```bash
+# Install Vercel CLI
 npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy
 vercel
+
+# Follow prompts:
+# - Set up and deploy? Y
+# - Which scope? (select your account)
+# - Link to existing project? N
+# - Project name? alotrips
+# - Directory? ./
+# - Override settings? N
+# - Add environment variables? Y (add all from .env.example)
 ```
 
-Follow the prompts and add environment variables when asked.
+#### Production Deployment Checklist
+
+- [ ] All environment variables configured in Vercel
+- [ ] Database migrations run in Supabase
+- [ ] `NEXT_PUBLIC_APP_URL` set to production domain
+- [ ] Supabase RLS policies configured (if using)
+- [ ] Domain configured (optional)
+- [ ] SSL certificate active (automatic with Vercel)
+- [ ] Analytics configured (optional)
+- [ ] Error monitoring set up (optional - Sentry, etc.)
+
+### Environment-Specific Configuration
+
+The `vercel.json` file is already configured with:
+- Build command: `npm run build`
+- Development command: `npm run dev`
+- Framework: Next.js
+- Region: `iad1` (US East)
+
+To change the region, edit `vercel.json`:
+```json
+{
+  "regions": ["iad1"]  // Options: iad1, sfo1, hnd1, etc.
+}
+```
 
 ## Database Schema
 
@@ -124,29 +219,129 @@ The application uses three main tables:
 
 See `supabase/migrations/001_initial_schema.sql` for the complete schema.
 
-## API Routes
+## 📡 API Documentation
 
-- `GET /api/search?vertical={vertical}` - Search for offers by vertical
-- `GET /api/user/profile` - Get user profile
-- `PUT /api/user/profile` - Update user profile
-- `GET /api/bookings?userId={userId}` - Get user bookings
-- `GET /api/admin/stats` - Get admin dashboard statistics
+### Search API
 
-## Project Structure
+**GET** `/api/search`
+
+Search for travel offers across all verticals.
+
+**Query Parameters:**
+- `vertical` (required): `stays` | `flights` | `cars` | `packages` | `cruises` | `things-to-do`
+- `destination` (required): Destination city or airport code
+- `origin` (optional): Origin city or airport code (required for flights)
+- `startDate` (required): Start date in `YYYY-MM-DD` format
+- `endDate` (optional): End date in `YYYY-MM-DD` format
+- `travelers` (optional): Number of travelers (default: 1)
+- `adults` (optional): Number of adults
+- `children` (optional): Number of children
+- `rooms` (optional): Number of rooms (default: 1)
+- `tripType` (optional): `round-trip` | `one-way` | `multi-city` (default: `round-trip`)
+
+**Example:**
+```bash
+GET /api/search?vertical=flights&destination=Paris&origin=New%20York&startDate=2024-06-01&endDate=2024-06-10&tripType=round-trip
+```
+
+**Response:**
+```json
+{
+  "offers": [
+    {
+      "id": "offer-id",
+      "provider": "EXPEDIA",
+      "vertical": "flights",
+      "title": "Flight Title",
+      "total_price": 600,
+      "currency": "USD",
+      ...
+    }
+  ]
+}
+```
+
+### Currency API
+
+**GET** `/api/currency/rates`
+
+Get exchange rates for currency conversion.
+
+**Query Parameters:**
+- `from` (optional): Base currency (default: `USD`)
+- `to` (optional): Target currency (default: `EUR`)
+- `currencies` (optional): Comma-separated list of currencies
+
+**Example:**
+```bash
+GET /api/currency/rates?from=USD&to=EUR
+```
+
+### User Profile API
+
+**GET** `/api/user/profile` - Get current user profile  
+**PUT** `/api/user/profile` - Update user profile
+
+### Bookings API
+
+**GET** `/api/bookings?userId={userId}` - Get user bookings
+
+### Admin API
+
+**GET** `/api/admin/affiliate/stats` - Get affiliate dashboard statistics  
+**GET** `/api/admin/users` - List users (admin only)  
+**GET** `/api/admin/bookings` - List bookings (admin only)
+
+### Tracking API
+
+**POST** `/api/tracking/event` - Track user events (clicks, views)  
+**POST** `/api/affiliate/postback` - Receive conversion postbacks from partners
+
+## 📁 Project Structure
 
 ```
 AloTrips/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── layout.tsx         # Root layout
-│   ├── page.tsx           # Home page
-│   └── globals.css        # Global styles
-├── components/            # React components
-├── lib/                   # Utilities
-│   └── supabase/         # Supabase client setup
-├── services/              # Business logic
-├── supabase/              # Database migrations and seeds
-└── types.ts              # TypeScript types
+├── app/                          # Next.js 15 App Router
+│   ├── api/                      # API routes
+│   │   ├── search/              # Search endpoint
+│   │   ├── currency/            # Currency conversion
+│   │   ├── tracking/            # Event tracking
+│   │   ├── admin/               # Admin endpoints
+│   │   └── user/                 # User endpoints
+│   ├── [vertical]/              # Vertical pages (stays, flights, etc.)
+│   ├── layout.tsx               # Root layout
+│   ├── page.tsx                 # Home page
+│   └── globals.css              # Global styles
+├── components/                   # React components
+│   ├── App.tsx                  # Main app component
+│   ├── OfferCard.tsx            # Offer display card
+│   ├── FiltersPanel.tsx         # Search filters
+│   ├── MapView.tsx              # Interactive map
+│   └── ...                      # Other components
+├── lib/                          # Utilities and business logic
+│   ├── providers/               # Provider adapters
+│   ├── currency/                # Currency conversion
+│   ├── tracking/                # Affiliate tracking
+│   ├── filters.ts               # Filter & sort logic
+│   ├── packages/                # Package bundling
+│   ├── upsells/                 # Upsell recommendations
+│   └── supabase/                # Supabase client setup
+├── services/                     # Service layer
+│   └── searchService.ts         # Search service
+├── hooks/                        # React hooks
+│   └── useTracking.ts           # Tracking hook
+├── types/                        # TypeScript types
+│   ├── api.ts                   # API types
+│   └── database.ts              # Database types
+├── __tests__/                    # Test files
+│   └── lib/                     # Unit tests
+├── supabase/                     # Database
+│   └── migrations/              # SQL migrations
+├── constants.ts                  # App constants
+├── middleware.ts                 # Next.js middleware (rate limiting)
+├── next.config.js                # Next.js configuration
+├── jest.config.js                # Jest configuration
+└── package.json                  # Dependencies
 ```
 
 ## Key Features Implementation
@@ -169,17 +364,76 @@ Currently supports mock data for:
 - Booking.com
 - Agoda
 
-## Contributing
+## 🧪 Testing
+
+The project includes a comprehensive test suite:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+Test coverage includes:
+- Currency conversion utilities
+- Tracking utilities (click IDs, UTM params)
+- Filter and sort logic
+- Upsell recommendation engine
+- Package bundling logic
+
+## 📚 Additional Documentation
+
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
+- **[CHANGELOG.md](./CHANGELOG.md)** - Project changelog
+- **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)** - Development roadmap
+
+## 🔧 Development
+
+### Adding a New Provider
+
+1. Create adapter in `lib/providers/[provider].ts`
+2. Implement `ProviderAdapter` interface
+3. Add normalization logic in `lib/providers/normalizer.ts`
+4. Register in `lib/providers/index.ts`
+5. Add API keys to `.env.example`
+
+### Adding a New Vertical
+
+1. Add vertical type to `types.ts`
+2. Create vertical page in `app/[vertical]/page.tsx`
+3. Add vertical-specific filters in `lib/filters.ts`
+4. Update provider adapters to support new vertical
+5. Add to sitemap generation
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Submit a pull request
+4. Write/update tests
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
-## License
+## 📄 License
 
 Copyright © 2025 AloTrips.me. A Goldmann LLC company. All rights reserved.
 
-## Support
+## 🆘 Support
 
-For issues and questions, please open an issue on GitHub.
+- **Documentation**: Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues
+- **Issues**: Open an issue on [GitHub](https://github.com/your-repo/issues)
+- **Email**: support@alotrips.me
+
+## 🙏 Acknowledgments
+
+- Built with [Next.js](https://nextjs.org/)
+- Database powered by [Supabase](https://supabase.com/)
+- Deployed on [Vercel](https://vercel.com/)
+- Icons by [Lucide](https://lucide.dev/)
