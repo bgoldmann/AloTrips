@@ -1,0 +1,5 @@
+{
+  "name": "AloTrips.me",
+  "description": "A full-service OTA experience aggregating flights, stays, and cars with a cheapest-first, EPC-optimized decision engine.",
+  "requestFramePermissions": []
+}
