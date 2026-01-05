@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { getCurrencySymbol } from '@/lib/currency';
 import { PRICE_HISTORY_DATA } from '../constants';
 import { TrendingUp } from 'lucide-react';
 
@@ -16,7 +17,7 @@ const PriceTrendChart: React.FC<PriceTrendChartProps> = ({
   destination = 'Selected Destination', 
   currency = 'USD' 
 }) => {
-  const currencySymbol = currency === 'EUR' ? '€' : '$';
+  const currencySymbol = getCurrencySymbol(currency as any);
   
   // Simple conversion for mock data if currency is EUR
   const chartData = currency === 'EUR' 

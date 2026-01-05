@@ -7,12 +7,20 @@ interface DateRangePickerProps {
   startDate: Date | null;
   endDate: Date | null;
   onChange: (start: Date, end: Date | null) => void;
+  showEndDate?: boolean;
+  error?: string;
 }
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, onChange }) => {
+const DateRangePicker: React.FC<DateRangePickerProps> = ({ 
+  startDate, 
+  endDate, 
+  onChange, 
+  showEndDate = true,
+  error 
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,7 +45,11 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
     const clickedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
 
     // Logic for selection
-    if (!startDate || (startDate && endDate) || clickedDate < startDate) {
+    if (!showEndDate) {
+      // One-way: just set start date
+      onChange(clickedDate, null);
+      setIsOpen(false);
+    } else if (!startDate || (startDate && endDate) || clickedDate < startDate) {
       onChange(clickedDate, null);
     } else {
       onChange(startDate, clickedDate);
@@ -131,18 +143,30 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
         
         <div 
             onClick={() => setIsOpen(!isOpen)}
-            className={`w-full h-16 pl-11 pt-5 rounded-2xl border bg-gray-50 cursor-pointer flex items-center text-gray-900 font-bold text-lg overflow-hidden whitespace-nowrap transition-all shadow-inner ${isOpen ? 'border-orange-500 ring-4 ring-orange-100 bg-white' : 'border-gray-200 hover:border-orange-300 hover:bg-white'}`}
+            className={`w-full h-16 pl-11 pt-5 rounded-2xl border ${
+              error ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'
+            } cursor-pointer flex items-center text-gray-900 font-bold text-lg overflow-hidden whitespace-nowrap transition-all shadow-inner ${
+              isOpen ? 'border-orange-500 ring-4 ring-orange-100 bg-white' : 'hover:border-orange-300 hover:bg-white'
+            }`}
         >
              {startDate ? (
                <span className="flex items-center gap-2">
                  {formatDate(startDate)} 
-                 <span className="text-orange-300 mx-1">→</span> 
-                 {endDate ? formatDate(endDate) : <span className="text-gray-400 font-normal text-base">Check-out</span>}
+                 {showEndDate && (
+                   <>
+                     <span className="text-orange-300 mx-1">→</span> 
+                     {endDate ? formatDate(endDate) : <span className="text-gray-400 font-normal text-base">Check-out</span>}
+                   </>
+                 )}
                </span>
              ) : (
-               <span className="text-gray-400 font-normal text-base">Select dates</span>
+               <span className="text-gray-400 font-normal text-base">Select {showEndDate ? 'dates' : 'date'}</span>
              )}
         </div>
+
+        {error && (
+          <p className="mt-1 text-xs text-red-600 font-medium">{error}</p>
+        )}
 
         {isOpen && (
             <div className="absolute top-20 left-0 z-50 bg-white rounded-3xl shadow-2xl border border-gray-100 p-6 flex flex-col md:flex-row gap-8 animate-in fade-in zoom-in-95 duration-200">

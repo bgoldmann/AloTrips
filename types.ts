@@ -43,6 +43,15 @@ export interface Offer {
   passengers?: number;
   mileage_limit?: string; // Unlimited, 200mi/day
   
+  // Activity/Things to Do Specifics
+  activity_category?: string; // Tours, Attractions, Experiences, etc.
+  activity_location?: string; // Specific location/address
+  activity_duration?: string; // "2 hours", "Full day", etc.
+  activity_start_time?: string; // "09:00", "Flexible", etc.
+  activity_includes?: string[]; // What's included (guide, equipment, etc.)
+  latitude?: number; // For map display
+  longitude?: number; // For map display
+  
   // Logic Props
   refundable: boolean;
   epc: number; // Earnings Per Click (simulated)
@@ -52,12 +61,18 @@ export interface Offer {
   isBestValue?: boolean;
 }
 
+export type TripType = 'round-trip' | 'one-way' | 'multi-city';
+
 export interface SearchParams {
   origin?: string;
   destination: string;
   startDate: string;
-  endDate: string;
+  endDate?: string; // Optional for one-way trips
   travelers: number;
+  adults?: number;
+  children?: number;
+  rooms?: number;
+  tripType?: TripType;
 }
 
 export interface TieSetConfig {
@@ -70,7 +85,45 @@ export interface UpsellConfig {
   showInsurance: boolean;
 }
 
+// Filter & Sort Types
+export type SortOption = 'price-asc' | 'price-desc' | 'rating-desc' | 'duration-asc' | 'duration-desc' | 'recommended';
+
+export interface FilterState {
+  // Price range
+  minPrice?: number;
+  maxPrice?: number;
+  
+  // Flights
+  maxStops?: number;
+  airlines?: string[];
+  departureTimeStart?: string; // HH:mm format
+  departureTimeEnd?: string; // HH:mm format
+  maxDuration?: number; // in minutes
+  
+  // Stays
+  minStars?: number;
+  minRating?: number;
+  refundable?: boolean;
+  amenities?: string[];
+  
+  // Cars
+  carClass?: string[];
+  suppliers?: string[];
+  transmission?: string[];
+  unlimitedMileage?: boolean;
+}
+
+export interface SortState {
+  sortBy: SortOption;
+}
+
 // User & Admin Types
+
+// Re-export API types
+export type { SearchApiResponse, PackageSearchApiResponse, SearchResponse } from './api';
+
+// Re-export database types
+export type { DatabaseOfferRow } from './database';
 
 export interface UserProfile {
   id: string;

@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Offer, Vertical } from '../types';
 import { Flame, Star, ShoppingBag, Clock, ShieldCheck, MapPin, Heart, Car, Users, Gauge, ArrowRight, Plane, Luggage } from 'lucide-react';
+import { useTracking } from '@/hooks/useTracking';
+import { getCurrencySymbol } from '@/lib/currency';
 
 interface OfferCardProps {
   offer: Offer;
@@ -11,7 +14,26 @@ interface OfferCardProps {
 
 const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
   const [isSaved, setIsSaved] = useState(false);
-  const currencySymbol = offer.currency === 'EUR' ? '€' : '$';
+  const currencySymbol = getCurrencySymbol(offer.currency as any);
+  const { trackRedirect } = useTracking();
+
+  const handleViewDeal = () => {
+    // Extract route/destination from offer title if available
+    const routeMatch = offer.title.match(/(.+?)\s*→\s*(.+)/);
+    const routeOrDestination = routeMatch 
+      ? `${routeMatch[1]}-${routeMatch[2]}`.replace(/\s+/g, '-').toLowerCase()
+      : undefined;
+
+    const { url } = trackRedirect(
+      vertical,
+      offer.provider,
+      'results_row',
+      routeOrDestination
+    );
+
+    // Open in new tab
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
@@ -42,7 +64,14 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
       <div className="flex flex-col md:flex-row gap-5">
         {/* Image / Thumbnail */}
         <div className="w-full md:w-56 h-40 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden relative shadow-inner">
-          <img src={offer.image} alt={offer.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+          <Image 
+            src={offer.image} 
+            alt={offer.title} 
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out" 
+            sizes="(max-width: 768px) 100vw, 224px"
+            unoptimized={offer.image?.includes('picsum.photos')}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </div>
 
@@ -197,7 +226,10 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
               </div>
            </div>
            
-           <button className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-2.5 px-4 rounded-xl w-full mt-3 transition-all shadow-md hover:shadow-orange-200 hover:-translate-y-0.5 flex items-center justify-center gap-2 group/btn">
+           <button 
+             onClick={handleViewDeal}
+             className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-2.5 px-4 rounded-xl w-full mt-3 transition-all shadow-md hover:shadow-orange-200 hover:-translate-y-0.5 flex items-center justify-center gap-2 group/btn"
+           >
              View Deal <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform"/>
            </button>
         </div>

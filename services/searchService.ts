@@ -1,6 +1,7 @@
 import { Offer, Vertical, TieSetConfig } from '../types';
-import { PROVIDER_TRUST_MULTIPLIER, TIE_SET_CONFIG } from '../constants';
+import { PROVIDER_TRUST_MULTIPLIER, TIE_SET_CONFIG, PRICE_PENALTIES } from '../constants';
 import { ProviderType } from '../types';
+import { DatabaseOfferRow } from '../types/database';
 
 // PRD 12.3: Total Price Calculation
 const computeTotalPrice = (offer: Partial<Offer>): number => {
@@ -8,10 +9,18 @@ const computeTotalPrice = (offer: Partial<Offer>): number => {
   let penalty = 0;
 
   // Anti-Fake-Cheap logic from PRD
-  if (offer.baggage_included === undefined || offer.baggage_included === false) penalty += 0.03;
-  if (offer.carryon_included === false) penalty += 0.02;
-  if ((offer.layover_minutes || 0) > 240) penalty += 0.01;
-  if (offer.refundable === false) penalty += 0.005;
+  if (offer.baggage_included === undefined || offer.baggage_included === false) {
+    penalty += PRICE_PENALTIES.NO_BAGgage;
+  }
+  if (offer.carryon_included === false) {
+    penalty += PRICE_PENALTIES.NO_CARRYON;
+  }
+  if ((offer.layover_minutes || 0) > 240) {
+    penalty += PRICE_PENALTIES.LONG_LAYOVER;
+  }
+  if (offer.refundable === false) {
+    penalty += PRICE_PENALTIES.NON_REFUNDABLE;
+  }
 
   return total * (1 + penalty);
 };
@@ -65,7 +74,7 @@ const applyGuardrails = (recommended: Offer, cheapest: Offer): Offer => {
 };
 
 // Transform database row to Offer type
-const transformDbOffer = (dbOffer: any): Offer => {
+const transformDbOffer = (dbOffer: DatabaseOfferRow): Offer => {
   return {
     id: dbOffer.id,
     provider: dbOffer.provider as ProviderType,
@@ -100,9 +109,16 @@ const transformDbOffer = (dbOffer: any): Offer => {
   };
 };
 
-export const processOffers = (rawOffers: any[], vertical: Vertical): Offer[] => {
+export const processOffers = (rawOffers: (Offer | DatabaseOfferRow)[], vertical: Vertical): Offer[] => {
   // 1. Transform database offers to Offer type
-  const offers: Offer[] = rawOffers.map(transformDbOffer);
+  const offers: Offer[] = rawOffers.map((offer): Offer => {
+    // If already an Offer, return as-is
+    if ('total_price' in offer && typeof offer.total_price === 'number') {
+      return offer as Offer;
+    }
+    // Otherwise, transform from database row
+    return transformDbOffer(offer as DatabaseOfferRow);
+  });
 
   // 2. Recompute total prices with penalties
   offers.forEach(o => {
@@ -132,9 +148,27 @@ export const processOffers = (rawOffers: any[], vertical: Vertical): Offer[] => 
 };
 
 // Client-side search function (calls API)
-export const searchOffers = async (vertical: Vertical): Promise<Offer[]> => {
+export const searchOffers = async (
+  vertical: Vertical,
+  searchParams?: Partial<import('../types').SearchParams>
+): Promise<Offer[]> => {
   try {
-    const response = await fetch(`/api/search?vertical=${vertical}`);
+    const params = new URLSearchParams();
+    params.append('vertical', vertical);
+
+    if (searchParams) {
+      if (searchParams.origin) params.append('origin', searchParams.origin);
+      if (searchParams.destination) params.append('destination', searchParams.destination);
+      if (searchParams.startDate) params.append('startDate', searchParams.startDate);
+      if (searchParams.endDate) params.append('endDate', searchParams.endDate);
+      if (searchParams.travelers) params.append('travelers', searchParams.travelers.toString());
+      if (searchParams.adults) params.append('adults', searchParams.adults.toString());
+      if (searchParams.children) params.append('children', searchParams.children.toString());
+      if (searchParams.rooms) params.append('rooms', searchParams.rooms.toString());
+      if (searchParams.tripType) params.append('tripType', searchParams.tripType);
+    }
+
+    const response = await fetch(`/api/search?${params.toString()}`);
     if (!response.ok) {
       throw new Error('Failed to fetch offers');
     }

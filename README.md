@@ -1,8 +1,8 @@
 # AloTrips.me
 
-A full-service online travel aggregator (Expedia-style) that compares flights, hotels, cars, packages, cruises, and activities. Built with Next.js, Supabase, and deployed on Vercel.
+A full-service online travel aggregator (Expedia-style) that compares flights, hotels, cars, packages, cruises, and activities. Built with Next.js 15, Supabase, and deployed on Vercel.
 
-## Features
+## 🚀 Features
 
 - 🛫 **Multi-Vertical Search**: Flights, Stays, Cars, Packages, Cruises, Things to Do
 - 💰 **Smart Pricing Engine**: Cheapest-first ranking with EPC-optimized "Best Value" recommendations
@@ -10,8 +10,14 @@ A full-service online travel aggregator (Expedia-style) that compares flights, h
 - 📊 **Admin Dashboard**: Revenue tracking, booking management, user analytics
 - 👤 **User Profiles**: Personal travel history, rewards points, preferences
 - 🤖 **AI Travel Assistant**: Powered by Google Gemini for travel recommendations
+- 💱 **Multi-Currency Support**: Real-time currency conversion with caching
+- 🗺️ **Interactive Maps**: Property and activity location visualization
+- 📦 **Package Bundling**: Flight+Hotel, Hotel+Car, Flight+Hotel+Car with savings calculation
+- 🎫 **Things to Do**: Activity search with category, duration, and rating filters
 - 🍪 **GDPR-Compliant**: Cookie consent management
+- 🔒 **Security**: CSP headers, input sanitization, rate limiting
 - 📱 **Responsive Design**: Modern UI optimized for all devices
+- ✅ **Test Coverage**: Comprehensive test suite with Jest and React Testing Library
 
 ## Tech Stack
 
@@ -23,12 +29,13 @@ A full-service online travel aggregator (Expedia-style) that compares flights, h
 - **Icons**: Lucide React
 - **AI**: Google Gemini API
 
-## Prerequisites
+## 📋 Prerequisites
 
-- Node.js 18+ 
-- npm or yarn
-- Supabase account
-- Google Gemini API key (optional, for AI assistant)
+- **Node.js** 18+ (LTS recommended)
+- **npm** or **yarn** package manager
+- **Supabase** account ([sign up free](https://supabase.com))
+- **Google Gemini API key** (optional, for AI assistant)
+- **Exchange Rate API key** (optional, for currency conversion)
 
 ## Getting Started
 

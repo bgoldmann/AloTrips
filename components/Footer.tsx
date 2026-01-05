@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Facebook, Twitter, Youtube, MessageCircle, Globe, Mail } from 'lucide-react';
 
 const RECOMMENDATION_TABS = [
@@ -103,8 +104,9 @@ const Footer: React.FC = () => {
             <li><a href="#" className="hover:text-orange-600 transition-colors">About AloTrips.me</a></li>
             <li><a href="#" className="hover:text-orange-600 transition-colors">News</a></li>
             <li><a href="#" className="hover:text-orange-600 transition-colors">Careers</a></li>
-            <li><a href="#" className="hover:text-orange-600 transition-colors">Terms & Conditions</a></li>
-            <li><a href="#" className="hover:text-orange-600 transition-colors">Privacy Statement</a></li>
+            <li><Link href="/terms" className="hover:text-orange-600 transition-colors">Terms & Conditions</Link></li>
+            <li><Link href="/privacy" className="hover:text-orange-600 transition-colors">Privacy Statement</Link></li>
+            <li><Link href="/cookies" className="hover:text-orange-600 transition-colors">Cookie Policy</Link></li>
             <li><a href="#" className="hover:text-orange-600 transition-colors">Accessibility Statement</a></li>
             <li><a href="#" className="hover:text-orange-600 transition-colors">Do Not Sell My Personal Information</a></li>
             <li><a href="#" className="hover:text-orange-600 transition-colors">About AloTrips Group</a></li>

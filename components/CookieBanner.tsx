@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Cookie, X, ShieldCheck } from 'lucide-react';
 
 interface ConsentState {
@@ -72,7 +73,7 @@ const CookieBanner: React.FC = () => {
                 We use cookies to enhance your experience, analyze site traffic, and deliver personalized content. 
                 By clicking "Accept All", you consent to our use of cookies. 
                 For US residents, this includes consent to share data for personalized advertising (Do Not Sell/Share My Info).
-                View our <a href="#" className="text-orange-600 hover:text-orange-700 hover:underline font-bold">Privacy Policy</a>.
+                View our <Link href="/privacy" className="text-orange-600 hover:text-orange-700 hover:underline font-bold">Privacy Policy</Link> and <Link href="/cookies" className="text-orange-600 hover:text-orange-700 hover:underline font-bold">Cookie Policy</Link>.
               </p>
             </div>
             

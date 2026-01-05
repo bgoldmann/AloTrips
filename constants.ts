@@ -13,12 +13,28 @@ export const DEFAULT_EPC = {
   flights: 0.12,
   stays: 0.25,
   cars: 0.18,
+  'things-to-do': 0.30,
+  packages: 0.20,
+  cruises: 0.15,
+  esim: 0.35,
+  insurance: 0.40,
 };
 
 export const TIE_SET_CONFIG: TieSetConfig = {
   priceTieThresholdAbsolute: 5.00,
   priceTieThresholdPercent: 1.01, // 1%
 };
+
+// PRD 12.3: Anti-Fake-Cheap Penalties
+export const PRICE_PENALTIES = {
+  NO_BAGgage: 0.03, // 3% penalty if baggage not included or unknown
+  NO_CARRYON: 0.02, // 2% penalty if carryon not included
+  LONG_LAYOVER: 0.01, // 1% penalty if layover > 240 minutes
+  NON_REFUNDABLE: 0.005, // 0.5% penalty if non-refundable
+} as const;
+
+// Package bundling discount
+export const PACKAGE_DISCOUNT_RATE = 0.85; // 15% discount (0.85 = 85% of original price)
 
 // Mock User Data
 export const MOCK_USER_PROFILE: UserProfile = {

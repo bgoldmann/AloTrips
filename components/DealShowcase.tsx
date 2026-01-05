@@ -37,10 +37,13 @@ const Section: React.FC<{
           >
             {/* Image Area */}
             <div className="relative h-56 overflow-hidden flex-shrink-0">
-              <img 
+              <Image 
                 src={deal.image} 
                 alt={deal.title} 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out" 
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out" 
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                unoptimized={deal.image?.includes('picsum.photos')}
               />
               <div className="absolute top-4 left-4 bg-red-500/90 backdrop-blur-sm text-white text-[10px] uppercase font-black px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5 tracking-wide">
                 <Tag size={12} className="fill-current" /> {deal.tag}

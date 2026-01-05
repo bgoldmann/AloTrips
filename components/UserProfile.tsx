@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { UserProfile, Booking } from '../types';
 import { User, Mail, Phone, MapPin, CreditCard, Award, Edit2, Save, X, Calendar, Plane, Briefcase } from 'lucide-react';
 
@@ -81,10 +82,13 @@ const UserProfilePage: React.FC = () => {
         <div className="h-32 bg-gradient-to-r from-orange-500 to-red-500"></div>
         <div className="px-8 pb-8 flex flex-col md:flex-row gap-6 items-end -mt-12">
            <div className="relative">
-              <img 
+              <Image 
                 src={profile.avatar} 
                 alt="Profile" 
-                className="w-32 h-32 rounded-full border-4 border-white shadow-md object-cover bg-white" 
+                width={128}
+                height={128}
+                className="rounded-full border-4 border-white shadow-md object-cover bg-white"
+                unoptimized={profile.avatar?.includes('pravatar.cc')}
               />
               <div className="absolute bottom-2 right-2 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
            </div>

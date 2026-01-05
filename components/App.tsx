@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Vertical, SearchParams, Offer } from '../types';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Vertical, SearchParams, Offer, TripType, UserProfile } from '../types';
 import { searchOffers } from '../services/searchService';
 import OfferCard from './OfferCard';
 import UpsellBanner from './UpsellBanner';
@@ -13,6 +15,20 @@ import Footer from './Footer';
 import CookieBanner from './CookieBanner';
 import UserProfilePage from './UserProfile';
 import AdminPanel from './AdminPanel';
+import LocationAutocomplete from './LocationAutocomplete';
+import TravelersSelector, { TravelersConfig } from './TravelersSelector';
+import TripTypeSelector from './TripTypeSelector';
+import ResultsToolbar from './ResultsToolbar';
+import FiltersPanel from './FiltersPanel';
+import UpsellRecommendation from './UpsellRecommendation';
+import MapView from './MapView';
+import PackageOfferCard from './PackageOfferCard';
+import ActivityOfferCard from './ActivityOfferCard';
+import { filterAndSortOffers } from '@/lib/filters';
+import { FilterState, SortOption } from '@/types';
+import { getUpsellRecommendation, TripContext } from '@/lib/upsells/rules';
+import { PackageOffer } from '@/lib/packages/bundler';
+import { convertCurrencySync, getCurrencySymbol, Currency, getCachedRate, prefetchExchangeRates } from '@/lib/currency';
 import { 
   Plane, Bed, Car, Package, Anchor, Ticket, 
   Search, MapPin, User, Menu, Globe, DollarSign, Euro, Sunset, LogOut, Settings, LayoutDashboard
@@ -25,13 +41,21 @@ const App: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<Offer[]>([]);
   const [searchHasRun, setSearchHasRun] = useState(false);
-  const [currency, setCurrency] = useState<'USD' | 'EUR'>('USD');
+  const [currency, setCurrency] = useState<Currency>('USD');
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
   const [currentView, setCurrentView] = useState<AppView>('home');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   
   // Search Form State
-  const [destination, setDestination] = useState('New York');
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('NYC');
+  const [tripType, setTripType] = useState<TripType>('round-trip');
+  const [travelers, setTravelers] = useState<TravelersConfig>({
+    adults: 2,
+    children: 0,
+    rooms: 1,
+  });
   
   // Date State with Defaults (Today + 3 days)
   const [startDate, setStartDate] = useState<Date | null>(new Date());
@@ -41,6 +65,39 @@ const App: React.FC = () => {
     return d;
   });
 
+  // Validation errors
+  const [errors, setErrors] = useState<{
+    origin?: string;
+    destination?: string;
+    startDate?: string;
+    endDate?: string;
+    travelers?: string;
+  }>({});
+
+  // Filters and Sorting
+  const [filters, setFilters] = useState<FilterState>({});
+  const [sortBy, setSortBy] = useState<SortOption>('recommended');
+  const [showFilters, setShowFilters] = useState(false);
+  const [rawResults, setRawResults] = useState<Offer[]>([]); // Store unfiltered results
+  
+  // Upsell recommendation
+  const [upsellRecommendation, setUpsellRecommendation] = useState<ReturnType<typeof getUpsellRecommendation>>(null);
+  
+  // Map view state
+  const [showMapView, setShowMapView] = useState(false);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | undefined>();
+
+  // Apply filters and sorting when they change (if results already exist)
+  useEffect(() => {
+    if (rawResults.length > 0) {
+      const processedResults = filterAndSortOffers(rawResults, filters, sortBy, activeVertical);
+      setResults(processedResults);
+    }
+    // Note: rawResults intentionally excluded from deps to prevent infinite loops
+    // We only want to re-filter when filters/sort/vertical changes, not when rawResults updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, sortBy, activeVertical]);
+
   // Fetch user profile on mount
   useEffect(() => {
     const fetchProfile = async () => {
@@ -49,6 +106,10 @@ const App: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           setUserProfile(data.profile);
+          // Set currency from user preference
+          if (data.profile?.currencyPreference) {
+            setCurrency(data.profile.currencyPreference as Currency);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch profile:', error);
@@ -57,14 +118,146 @@ const App: React.FC = () => {
     fetchProfile();
   }, []);
 
+  // Prefetch exchange rates when currency changes
+  useEffect(() => {
+    const fetchRates = async () => {
+      if (currency !== 'USD') {
+        try {
+          const response = await fetch(`/api/currency/rates?from=USD&to=${currency}`);
+          if (response.ok) {
+            const data = await response.json();
+            setExchangeRates(prev => ({
+              ...prev,
+              [`USD_${currency}`]: data.rate,
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch exchange rates:', error);
+        }
+      }
+    };
+    fetchRates();
+  }, [currency]);
+
+  const validateSearch = (): boolean => {
+    const newErrors: typeof errors = {};
+
+    // Validate destination (required for all verticals)
+    if (!destination || destination.trim().length === 0) {
+      newErrors.destination = 'Destination is required';
+    }
+
+    // Validate origin for flights
+    if (activeVertical === 'flights' && tripType !== 'multi-city') {
+      if (!origin || origin.trim().length === 0) {
+        newErrors.origin = 'Origin is required for flights';
+      }
+    }
+
+    // Validate dates
+    if (!startDate) {
+      newErrors.startDate = 'Start date is required';
+    }
+
+    if (activeVertical !== 'flights' || tripType === 'round-trip') {
+      if (!endDate) {
+        newErrors.endDate = 'End date is required';
+      } else if (startDate && endDate && endDate < startDate) {
+        newErrors.endDate = 'End date must be after start date';
+      }
+    }
+
+    // Validate travelers
+    if (travelers.adults === 0 && travelers.children === 0) {
+      newErrors.travelers = 'At least one traveler is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSearch = async () => {
+    // Validate before searching
+    if (!validateSearch()) {
+      return;
+    }
+
     setIsSearching(true);
     setSearchHasRun(true);
     setResults([]); // clear previous
     
     try {
-      const data = await searchOffers(activeVertical);
-      setResults(data);
+      // Build search parameters
+      const searchParams: SearchParams = {
+        origin: activeVertical === 'flights' ? origin : undefined,
+        destination,
+        startDate: startDate?.toISOString().split('T')[0] || '',
+        endDate: (activeVertical !== 'flights' || tripType === 'round-trip') 
+          ? (endDate?.toISOString().split('T')[0] || '')
+          : undefined,
+        travelers: travelers.adults + travelers.children,
+        adults: travelers.adults,
+        children: travelers.children,
+        rooms: activeVertical === 'stays' ? travelers.rooms : undefined,
+        tripType: activeVertical === 'flights' ? tripType : undefined,
+      };
+
+      // For packages, call API directly to get bundled results
+      if (activeVertical === 'packages') {
+        try {
+          const response = await fetch(`/api/search?${new URLSearchParams({
+            vertical: activeVertical,
+            destination: searchParams.destination,
+            startDate: searchParams.startDate,
+            ...(searchParams.endDate && { endDate: searchParams.endDate }),
+            ...(searchParams.origin && { origin: searchParams.origin }),
+            travelers: String(searchParams.travelers),
+            ...(searchParams.adults && { adults: String(searchParams.adults) }),
+            ...(searchParams.children && { children: String(searchParams.children) }),
+            ...(searchParams.rooms && { rooms: String(searchParams.rooms) }),
+            ...(searchParams.tripType && { tripType: searchParams.tripType }),
+          }).toString()}`);
+          
+          if (!response.ok) {
+            throw new Error(`Search failed: ${response.statusText}`);
+          }
+          
+          const responseData = await response.json();
+          
+          if (responseData.packages && Array.isArray(responseData.offers)) {
+            setPackageResults(responseData.offers as PackageOffer[]);
+            setResults([]);
+            setRawResults([]);
+          } else {
+            setPackageResults([]);
+            setResults([]);
+            setRawResults([]);
+          }
+        } catch (packageError) {
+          console.error('Package search error:', packageError);
+          setPackageResults([]);
+          setResults([]);
+          setRawResults([]);
+        }
+      } else {
+        const data = await searchOffers(activeVertical, searchParams);
+        // Store raw results
+        setRawResults(data);
+        // Apply filters and sorting to results
+        const processedResults = filterAndSortOffers(data, filters, sortBy, activeVertical);
+        setResults(processedResults);
+        
+        // Generate upsell recommendation based on trip context
+        const tripContext: TripContext = {
+          vertical: activeVertical,
+          searchParams,
+          offers: data,
+          destination,
+          origin,
+        };
+        const recommendation = getUpsellRecommendation(tripContext);
+        setUpsellRecommendation(recommendation);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -144,7 +337,7 @@ const App: React.FC = () => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="hidden md:flex items-center gap-2 hover:bg-orange-50 pl-2 pr-4 py-1.5 rounded-full transition-all border border-transparent hover:border-orange-100"
                >
-                 <img src={avatar} className="w-8 h-8 rounded-full border border-gray-200" alt="Avatar"/>
+                 <Image src={avatar} width={32} height={32} className="rounded-full border border-gray-200" alt="Avatar" unoptimized={avatar?.includes('pravatar.cc')}/>
                  <span className="font-semibold text-gray-700">{displayName}</span>
                </button>
                
@@ -227,42 +420,69 @@ const App: React.FC = () => {
                      ))}
                   </div>
 
+                  {/* Trip Type Selector (Flights only) */}
+                  {activeVertical === 'flights' && (
+                    <div className="mb-4">
+                      <TripTypeSelector value={tripType} onChange={setTripType} />
+                    </div>
+                  )}
+
                   {/* Input Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                     <div className="md:col-span-5 relative group">
-                        <label className="absolute left-11 top-3 text-xs text-gray-500 font-bold uppercase tracking-wider group-focus-within:text-orange-600 transition-colors">
-                           {activeVertical === 'cars' ? 'Pick-up Location' : 'Where to?'}
-                        </label>
-                        <MapPin className="absolute left-4 top-4.5 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={20} />
-                        <input 
-                          type="text" 
-                          value={destination}
-                          onChange={(e) => setDestination(e.target.value)}
-                          className="w-full h-16 pl-11 pt-5 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-100 outline-none font-bold text-gray-900 text-lg transition-all shadow-inner"
-                        />
+                     {/* Origin (Flights only) */}
+                     {activeVertical === 'flights' && tripType !== 'multi-city' && (
+                       <div className="md:col-span-5 relative group">
+                         <LocationAutocomplete
+                           value={origin}
+                           onChange={setOrigin}
+                           placeholder="From?"
+                           label="From"
+                           type="airport"
+                           required
+                           error={errors.origin}
+                         />
+                       </div>
+                     )}
+
+                     {/* Destination */}
+                     <div className={`relative group ${activeVertical === 'flights' && tripType !== 'multi-city' ? 'md:col-span-5' : 'md:col-span-6'}`}>
+                       <LocationAutocomplete
+                         value={destination}
+                         onChange={setDestination}
+                         placeholder={activeVertical === 'cars' ? 'Pick-up Location' : 'Where to?'}
+                         label={activeVertical === 'cars' ? 'Pick-up Location' : 'Where to?'}
+                         type={activeVertical === 'flights' ? 'airport' : 'city'}
+                         required
+                         error={errors.destination}
+                       />
                      </div>
                      
+                     {/* Date Range */}
                      <div className="md:col-span-3">
                         <DateRangePicker 
                           startDate={startDate} 
-                          endDate={endDate} 
+                          endDate={endDate}
+                          showEndDate={activeVertical !== 'flights' || tripType === 'round-trip'}
                           onChange={(start, end) => {
                             setStartDate(start);
                             setEndDate(end);
-                          }} 
+                          }}
+                          error={errors.startDate || errors.endDate}
                         />
                      </div>
 
+                     {/* Travelers */}
                      <div className="md:col-span-3 relative group">
-                        <label className="absolute left-11 top-3 text-xs text-gray-500 font-bold uppercase tracking-wider group-focus-within:text-orange-600 transition-colors">Travelers</label>
-                        <User className="absolute left-4 top-4.5 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={20} />
-                        <input 
-                          type="text" 
-                          defaultValue={activeVertical === 'cars' ? "1 Driver" : "2 travelers"}
-                          className="w-full h-16 pl-11 pt-5 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-100 outline-none font-bold text-gray-900 text-lg transition-all shadow-inner"
-                        />
+                       <TravelersSelector
+                         value={travelers}
+                         onChange={setTravelers}
+                         showRooms={activeVertical === 'stays'}
+                         label={activeVertical === 'cars' ? 'Drivers' : 'Travelers'}
+                         error={errors.travelers}
+                       />
                      </div>
 
+                     {/* Search Button */}
                      <div className="md:col-span-1">
                         <button 
                           onClick={handleSearch}
@@ -288,33 +508,52 @@ const App: React.FC = () => {
             <aside className="hidden lg:block space-y-6">
                {searchHasRun && (
                  <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 group cursor-pointer hover:shadow-md transition-all">
-                      <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                        <MapPin size={18} className="text-orange-500"/> Map View
-                      </h3>
-                      <div className="h-32 bg-orange-50 rounded-xl flex items-center justify-center text-orange-400 group-hover:bg-orange-100 transition-colors border-2 border-dashed border-orange-200">
-                         <span className="text-sm font-bold">Show interactive map</span>
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                          <MapPin size={18} className="text-orange-500"/> Map View
+                        </h3>
+                        <button
+                          onClick={() => setShowMapView(!showMapView)}
+                          className="text-sm text-orange-600 hover:text-orange-700 font-semibold"
+                        >
+                          {showMapView ? 'Hide' : 'Show'} Map
+                        </button>
                       </div>
+                      {showMapView && (
+                        <div className="h-64 rounded-xl overflow-hidden">
+                          <MapView
+                            offers={rawResults.length > 0 ? rawResults : results}
+                            vertical={activeVertical}
+                            onMarkerClick={(offer) => {
+                              setSelectedOfferId(offer.id);
+                              // Scroll to offer in list
+                              const element = document.getElementById(`offer-${offer.id}`);
+                              if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }
+                            }}
+                            selectedOfferId={selectedOfferId}
+                          />
+                        </div>
+                      )}
+                      {!showMapView && (
+                        <div className="h-32 bg-orange-50 rounded-xl flex items-center justify-center text-orange-400 cursor-pointer hover:bg-orange-100 transition-colors border-2 border-dashed border-orange-200"
+                             onClick={() => setShowMapView(true)}
+                        >
+                          <span className="text-sm font-bold">Click to show interactive map</span>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                       <h3 className="font-bold text-gray-900 mb-5">Filters</h3>
-                       
-                       <div className="mb-6">
-                         <h4 className="text-sm font-bold text-gray-700 mb-3">Price Range</h4>
-                         <input type="range" className="w-full accent-orange-500 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
-                       </div>
-
-                       <div className="space-y-3">
-                          <h4 className="text-sm font-bold text-gray-700">Popular Filters</h4>
-                          {['Breakfast Included', 'Pool', 'Free cancellation', 'Pet friendly'].map(f => (
-                            <label key={f} className="flex items-center gap-3 text-sm text-gray-600 cursor-pointer hover:text-orange-600 transition-colors">
-                               <input type="checkbox" className="w-5 h-5 rounded text-orange-600 focus:ring-orange-500 border-gray-300" />
-                               {f}
-                            </label>
-                          ))}
-                       </div>
-                    </div>
+                    <FiltersPanel
+                      vertical={activeVertical}
+                      filters={filters}
+                      onFiltersChange={setFilters}
+                      onClear={() => setFilters({})}
+                      isOpen={true}
+                      onClose={() => {}}
+                    />
                  </div>
                )}
                
@@ -350,18 +589,36 @@ const App: React.FC = () => {
                )}
 
                {/* Results List */}
-               {searchHasRun && !isSearching && results.length > 0 && (
+               {searchHasRun && !isSearching && (
                  <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
                    
-                   {/* Context Header */}
-                   <div className="flex justify-between items-center mb-6">
-                     <h2 className="text-xl font-bold text-gray-800">
-                        <span className="text-orange-600">{results.length}</span> properties in {destination}
-                     </h2>
-                     <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
-                        Sort by: <span className="font-bold text-orange-600">Recommended</span>
-                     </div>
-                   </div>
+                   {/* Results Toolbar */}
+                   {results.length > 0 && (
+                     <>
+                       <ResultsToolbar
+                         vertical={activeVertical}
+                         sortBy={sortBy}
+                         onSortChange={setSortBy}
+                         resultCount={activeVertical === 'packages' ? packageResults.length : results.length}
+                         onFilterToggle={() => setShowFilters(!showFilters)}
+                         showFilters={showFilters}
+                       />
+
+                       {/* Mobile Filters Panel */}
+                       {showFilters && (
+                         <div className="lg:hidden mb-6">
+                           <FiltersPanel
+                             vertical={activeVertical}
+                             filters={filters}
+                             onFiltersChange={setFilters}
+                             onClear={() => setFilters({})}
+                             isOpen={showFilters}
+                             onClose={() => setShowFilters(false)}
+                           />
+                         </div>
+                       )}
+                     </>
+                   )}
 
                    {/* Price History Chart */}
                    {activeVertical === 'flights' && (
@@ -371,29 +628,68 @@ const App: React.FC = () => {
                      />
                    )}
 
-                   {/* Upsell Logic */}
-                   <div className="transform hover:scale-[1.01] transition-transform duration-300">
-                      {activeVertical === 'flights' ? <UpsellBanner type="insurance" /> : <UpsellBanner type="esim" />}
-                   </div>
+                   {/* Upsell Recommendation */}
+                   {upsellRecommendation && (
+                     <div className="transform hover:scale-[1.01] transition-transform duration-300">
+                       <UpsellRecommendation 
+                         recommendation={upsellRecommendation}
+                         onDismiss={() => setUpsellRecommendation(null)}
+                       />
+                     </div>
+                   )}
 
-                   <div className="space-y-5">
-                     {results.map((offer, index) => (
-                       <div key={offer.id} className="animate-in fade-in slide-in-from-bottom-4" style={{animationDelay: `${index * 100}ms`}}>
-                         <OfferCard 
-                           offer={{
-                              ...offer,
-                              currency: currency,
-                              total_price: currency === 'EUR' ? offer.total_price * 0.92 : offer.total_price
-                           }} 
-                           vertical={activeVertical} 
-                         />
-                       </div>
-                     ))}
-                   </div>
+                       {/* Regular Results */}
+                       {activeVertical !== 'packages' && results.length > 0 && (
+                         <div className="space-y-5">
+                           {results.map((offer, index) => (
+                             <div 
+                               key={offer.id} 
+                               id={`offer-${offer.id}`}
+                               className={`animate-in fade-in slide-in-from-bottom-4 transition-all ${
+                                 selectedOfferId === offer.id ? 'ring-2 ring-orange-500 rounded-2xl p-2' : ''
+                               }`}
+                               style={{animationDelay: `${index * 100}ms`}}
+                               onMouseEnter={() => setSelectedOfferId(offer.id)}
+                               onMouseLeave={() => setSelectedOfferId(undefined)}
+                             >
+                               {activeVertical === 'things-to-do' ? (
+                                 <ActivityOfferCard 
+                                   offer={{
+                                     ...offer,
+                                     currency: currency,
+                                     total_price: currency === 'EUR' ? offer.total_price * 0.92 : offer.total_price
+                                   }} 
+                                 />
+                               ) : (
+                                 <OfferCard 
+                                   offer={{
+                                      ...offer,
+                                      currency: currency,
+                                      total_price: currency === 'EUR' ? offer.total_price * 0.92 : offer.total_price
+                                   }} 
+                                   vertical={activeVertical} 
+                                 />
+                               )}
+                             </div>
+                           ))}
+                         </div>
+                       )}
+
+                       {/* No Results */}
+                       {activeVertical !== 'packages' && results.length === 0 && searchHasRun && !isSearching && (
+                         <div className="text-center py-12">
+                           <p className="text-gray-500 text-lg">No results found. Try adjusting your search criteria.</p>
+                         </div>
+                       )}
                    
-                   <p className="text-center text-xs text-gray-400 mt-10">
-                     *Prices include estimated taxes and fees.
-                   </p>
+                   <div className="mt-10 space-y-2">
+                     <p className="text-center text-xs text-gray-400">
+                       *Prices include estimated taxes and fees. Final prices may vary. <Link href="/terms" className="text-orange-500 hover:text-orange-600 underline">See price accuracy disclaimer</Link>.
+                     </p>
+                     <p className="text-center text-xs text-gray-400">
+                       We may earn a commission when you book through our links. <Link href="/terms" className="text-orange-500 hover:text-orange-600 underline">Learn more</Link>.
+                     </p>
+                   </div>
                  </div>
                )}
 
