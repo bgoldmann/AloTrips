@@ -1,24 +1,78 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { UserProfile, Booking } from '../types';
-import { MOCK_USER_PROFILE, MOCK_BOOKINGS } from '../constants';
 import { User, Mail, Phone, MapPin, CreditCard, Award, Edit2, Save, X, Calendar, Plane, Briefcase } from 'lucide-react';
 
 const UserProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState<UserProfile>(MOCK_USER_PROFILE);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'bookings' | 'settings'>('overview');
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Simulate API call
-    console.log('Saved profile:', profile);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [profileRes, bookingsRes] = await Promise.all([
+          fetch('/api/user/profile'),
+          fetch('/api/bookings?userId=u_12345')
+        ]);
+
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          setProfile(profileData.profile);
+        }
+
+        if (bookingsRes.ok) {
+          const bookingsData = await bookingsRes.json();
+          setBookings(bookingsData.bookings || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleSave = async () => {
+    if (!profile) return;
+    
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+
+      if (response.ok) {
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+    }
   };
 
   const handleChange = (field: keyof UserProfile, value: string) => {
+    if (!profile) return;
     setProfile({ ...profile, [field]: value });
   };
 
-  const userBookings = MOCK_BOOKINGS.filter(b => b.customerName.includes(profile.firstName) || b.customerName.includes('Traveler'));
+  const userBookings = bookings.filter(b => 
+    b.customerName.includes(profile?.firstName || '') || 
+    b.customerName.includes('Traveler')
+  );
+
+  if (loading || !profile) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="animate-pulse">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -150,7 +204,7 @@ const UserProfilePage: React.FC = () => {
                   <p className="text-lg tracking-widest font-mono text-gray-300">•••• •••• •••• 4242</p>
                </div>
                <div className="flex justify-between text-sm text-gray-400">
-                  <span>ALEX TRAVELER</span>
+                  <span>{profile.firstName.toUpperCase()} {profile.lastName.toUpperCase()}</span>
                   <span>12/26</span>
                </div>
             </div>
@@ -206,7 +260,6 @@ const UserProfilePage: React.FC = () => {
                   <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 text-orange-800 text-sm mb-4">
                      All your past and upcoming trips are listed here. Need to make a change? Contact support.
                   </div>
-                  {/* Reuse the booking list UI for simplicity */}
                   {userBookings.map((booking) => (
                       <div key={booking.id} className="bg-white p-5 rounded-2xl border border-gray-100 hover:border-orange-200 transition-all group">
                          <div className="flex justify-between items-start mb-4">

@@ -1,5 +1,6 @@
 import { Offer, Vertical, TieSetConfig } from '../types';
-import { PROVIDER_TRUST_MULTIPLIER, TIE_SET_CONFIG, MOCK_FLIGHT_OFFERS, MOCK_STAY_OFFERS, MOCK_CAR_OFFERS } from '../constants';
+import { PROVIDER_TRUST_MULTIPLIER, TIE_SET_CONFIG } from '../constants';
+import { ProviderType } from '../types';
 
 // PRD 12.3: Total Price Calculation
 const computeTotalPrice = (offer: Partial<Offer>): number => {
@@ -63,37 +64,63 @@ const applyGuardrails = (recommended: Offer, cheapest: Offer): Offer => {
   return recommended;
 };
 
+// Transform database row to Offer type
+const transformDbOffer = (dbOffer: any): Offer => {
+  return {
+    id: dbOffer.id,
+    provider: dbOffer.provider as ProviderType,
+    vertical: dbOffer.vertical as Vertical,
+    title: dbOffer.title,
+    subtitle: dbOffer.subtitle,
+    base_price: Number(dbOffer.base_price),
+    taxes_fees: Number(dbOffer.taxes_fees),
+    total_price: Number(dbOffer.total_price),
+    currency: dbOffer.currency,
+    rating: Number(dbOffer.rating),
+    reviewCount: dbOffer.review_count,
+    image: dbOffer.image,
+    stops: dbOffer.stops,
+    duration: dbOffer.duration,
+    layover_minutes: dbOffer.layover_minutes,
+    baggage_included: dbOffer.baggage_included,
+    carryon_included: dbOffer.carryon_included,
+    flight_number: dbOffer.flight_number,
+    departure_time: dbOffer.departure_time,
+    arrival_time: dbOffer.arrival_time,
+    stars: dbOffer.stars,
+    amenities: dbOffer.amenities,
+    car_type: dbOffer.car_type,
+    transmission: dbOffer.transmission,
+    passengers: dbOffer.passengers,
+    mileage_limit: dbOffer.mileage_limit,
+    refundable: dbOffer.refundable,
+    epc: Number(dbOffer.epc),
+    isCheapest: dbOffer.is_cheapest || false,
+    isBestValue: dbOffer.is_best_value || false,
+  };
+};
+
 export const processOffers = (rawOffers: any[], vertical: Vertical): Offer[] => {
-  // 1. Normalize and compute total price
-  const offers: Offer[] = rawOffers.map((o) => {
-    const total = computeTotalPrice(o);
-    const image = vertical === 'flights' 
-      ? `https://picsum.photos/seed/${o.subtitle.replace(/\s/g, '')}/64/64`
-      : vertical === 'cars'
-      ? `https://picsum.photos/seed/${o.title.replace(/\s/g, '')}car/300/200`
-      : `https://picsum.photos/seed/${o.id}/300/200`;
-      
-    return {
-      ...o,
-      vertical,
-      total_price: total,
-      currency: 'USD',
-      image
-    };
+  // 1. Transform database offers to Offer type
+  const offers: Offer[] = rawOffers.map(transformDbOffer);
+
+  // 2. Recompute total prices with penalties
+  offers.forEach(o => {
+    o.total_price = computeTotalPrice(o);
   });
 
-  // 2. Sort by Cheapest First (PRD 8)
+  // 3. Sort by Cheapest First (PRD 8)
   offers.sort((a, b) => a.total_price - b.total_price);
 
   if (offers.length === 0) return [];
 
-  // 3. Logic Engine
+  // 4. Logic Engine
   const cheapest = offers[0];
   const tieSet = getTieSet(offers, TIE_SET_CONFIG);
   const winner = chooseWinner(tieSet);
   const recommended = winner ? applyGuardrails(winner, cheapest) : cheapest;
 
-  // 4. Tagging
+  // 5. Tagging
   offers.forEach(o => {
     if (o.id === cheapest.id) o.isCheapest = true;
     if (o.id === recommended.id && recommended.id !== cheapest.id) o.isBestValue = true;
@@ -104,17 +131,17 @@ export const processOffers = (rawOffers: any[], vertical: Vertical): Offer[] => 
   return offers;
 };
 
+// Client-side search function (calls API)
 export const searchOffers = async (vertical: Vertical): Promise<Offer[]> => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-
-  if (vertical === 'flights') {
-    return processOffers(MOCK_FLIGHT_OFFERS, vertical);
-  } else if (vertical === 'stays') {
-    return processOffers(MOCK_STAY_OFFERS, vertical);
-  } else if (vertical === 'cars') {
-    return processOffers(MOCK_CAR_OFFERS, vertical);
+  try {
+    const response = await fetch(`/api/search?vertical=${vertical}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch offers');
+    }
+    const data = await response.json();
+    return data.offers || [];
+  } catch (error) {
+    console.error('Search error:', error);
+    return [];
   }
-  
-  return [];
 };

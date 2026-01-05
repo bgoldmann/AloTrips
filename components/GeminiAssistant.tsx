@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
@@ -18,7 +20,8 @@ const GeminiAssistant: React.FC = () => {
   useEffect(scrollToBottom, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || !process.env.API_KEY) return;
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!input.trim() || !apiKey) return;
     
     const userMsg = input;
     setInput('');
@@ -26,7 +29,7 @@ const GeminiAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const model = 'gemini-3-flash-preview'; 
       
       const response = await ai.models.generateContent({
@@ -105,13 +108,13 @@ const GeminiAssistant: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder={process.env.API_KEY ? "Ask about Paris..." : "Missing API Key"}
-          disabled={!process.env.API_KEY || isLoading}
+          placeholder={(process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY) ? "Ask about Paris..." : "Missing API Key"}
+          disabled={!(process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY) || isLoading}
           className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all text-gray-800 placeholder-gray-400"
         />
         <button 
           onClick={handleSend}
-          disabled={!process.env.API_KEY || isLoading}
+          disabled={!(process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY) || isLoading}
           className="bg-orange-500 text-white p-2.5 rounded-full hover:bg-orange-600 disabled:opacity-50 transition-all hover:scale-105 shadow-md"
         >
           <Send size={18} className={isLoading ? "opacity-0" : ""} />

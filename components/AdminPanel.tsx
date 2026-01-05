@@ -1,11 +1,50 @@
-import React, { useState } from 'react';
-import { MOCK_ADMIN_STATS, MOCK_BOOKINGS } from '../constants';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { LayoutDashboard, Users, CreditCard, ShoppingBag, TrendingUp, Search, Filter, AlertCircle, CheckCircle } from 'lucide-react';
+import { AdminStats, Booking } from '../types';
 
 const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'bookings' | 'users'>('dashboard');
-  const stats = MOCK_ADMIN_STATS;
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsRes, bookingsRes] = await Promise.all([
+          fetch('/api/admin/stats'),
+          fetch('/api/bookings')
+        ]);
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats(statsData.stats);
+        }
+
+        if (bookingsRes.ok) {
+          const bookingsData = await bookingsRes.json();
+          setBookings(bookingsData.bookings || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch admin data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading || !stats) {
+    return (
+      <div className="flex min-h-screen bg-gray-50/50 items-center justify-center">
+        <div className="animate-pulse">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50/50">
@@ -174,7 +213,7 @@ const AdminPanel: React.FC = () => {
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-gray-100">
-                        {MOCK_BOOKINGS.map((booking) => (
+                        {bookings.map((booking) => (
                            <tr key={booking.id} className="hover:bg-gray-50/50 transition-colors">
                               <td className="px-6 py-4 text-sm font-mono text-gray-500">{booking.id}</td>
                               <td className="px-6 py-4 text-sm font-bold text-gray-900 flex items-center gap-2">

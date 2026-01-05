@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Offer, Vertical } from '../types';
 import { Flame, Star, ShoppingBag, Clock, ShieldCheck, MapPin, Heart, Car, Users, Gauge, ArrowRight, Plane, Luggage } from 'lucide-react';
