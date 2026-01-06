@@ -44,7 +44,15 @@ export async function GET(request: NextRequest) {
       rooms: searchParams.get('rooms') ? parseInt(searchParams.get('rooms')!, 10) : undefined,
       tripType: searchParams.get('tripType') as SearchParams['tripType'] || undefined,
       flexibleDays: searchParams.get('flexibleDays') ? parseInt(searchParams.get('flexibleDays')!, 10) : undefined,
-      flightSegments: searchParams.get('flightSegments') ? JSON.parse(searchParams.get('flightSegments')!) : undefined,
+      flightSegments: (() => {
+        const segments = searchParams.get('flightSegments');
+        if (!segments) return undefined;
+        try {
+          return JSON.parse(segments);
+        } catch {
+          return undefined;
+        }
+      })(),
       includeNearbyAirports: searchParams.get('includeNearbyAirports') === 'true',
     };
     
@@ -221,14 +229,15 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (providerError) {
-      logApiError('/api/search', providerError instanceof Error ? providerError : new Error(String(providerError)), {
-        vertical,
-        searchParams: {
-          destination: searchParamsObj.destination,
-          origin: searchParamsObj.origin,
-        },
-      });
-      // Continue to fallback to Supabase
+        logApiError('/api/search', providerError instanceof Error ? providerError : new Error(String(providerError)), {
+          vertical,
+          searchParams: {
+            destination: searchParamsObj.destination,
+            origin: searchParamsObj.origin,
+          },
+        });
+        // Continue to fallback to Supabase
+      }
     }
 
     // Fallback to Supabase if no provider offers or as additional source
@@ -398,8 +407,8 @@ export async function GET(request: NextRequest) {
             is_cheapest: offer.isCheapest || false,
             is_best_value: offer.isBestValue || false,
           }));
-      (supabase
-        .from('offers') as any)
+      supabase
+        .from('offers')
         .upsert(upsertData, { onConflict: 'id' })
         .then(() => {
           // Silently handle errors

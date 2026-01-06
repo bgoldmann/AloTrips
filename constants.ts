@@ -27,7 +27,7 @@ export const TIE_SET_CONFIG: TieSetConfig = {
 
 // PRD 12.3: Anti-Fake-Cheap Penalties
 export const PRICE_PENALTIES = {
-  NO_BAGgage: 0.03, // 3% penalty if baggage not included or unknown
+  NO_BAGGAGE: 0.03, // 3% penalty if baggage not included or unknown
   NO_CARRYON: 0.02, // 2% penalty if carryon not included
   LONG_LAYOVER: 0.01, // 1% penalty if layover > 240 minutes
   NON_REFUNDABLE: 0.005, // 0.5% penalty if non-refundable

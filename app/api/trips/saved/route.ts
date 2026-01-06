@@ -5,8 +5,19 @@ import { sanitizeString } from '@/lib/utils/sanitize';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
+    
+    // Get current user from auth session
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
-    const userId = searchParams.get('userId') || 'u_12345'; // Default for demo
+    const userId = authUser.id; // Use authenticated user ID // Default for demo
 
     const { data: trips, error } = await supabase
       .from('saved_trips')
@@ -34,9 +45,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    
+    // Get current user from auth session
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const {
-      userId = 'u_12345',
       name,
       vertical,
       searchParams: searchParamsData,
@@ -55,16 +77,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate vertical
+    if (!['stays', 'flights', 'cars', 'packages', 'cruises', 'things-to-do'].includes(vertical)) {
+      return NextResponse.json(
+        { error: 'Invalid vertical parameter' },
+        { status: 400 }
+      );
+    }
+
     // Sanitize input
     const sanitizedName = sanitizeString(name);
     const sanitizedNotes = notes ? sanitizeString(notes) : null;
 
-    const supabase = await createClient();
-
-    const { data, error } = await (supabase
-      .from('saved_trips') as any)
+    const { data, error } = await supabase
+      .from('saved_trips')
       .insert({
-        user_id: userId,
+        user_id: authUser.id,
         name: sanitizedName,
         vertical,
         search_params: searchParamsData,
@@ -97,6 +125,18 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    
+    // Get current user from auth session
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { id, name, notes, tags, isFavorite } = body;
 
@@ -107,7 +147,19 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // Verify trip belongs to user
+    const { data: trip } = await supabase
+      .from('saved_trips')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (!trip || trip.user_id !== authUser.id) {
+      return NextResponse.json(
+        { error: 'Trip not found or access denied' },
+        { status: 404 }
+      );
+    }
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = sanitizeString(name);
@@ -115,8 +167,8 @@ export async function PUT(request: NextRequest) {
     if (tags !== undefined) updateData.tags = tags;
     if (isFavorite !== undefined) updateData.is_favorite = isFavorite;
 
-    const { data, error } = await (supabase
-      .from('saved_trips') as any)
+    const { data, error } = await supabase
+      .from('saved_trips')
       .update(updateData)
       .eq('id', id)
       .select()
@@ -142,6 +194,18 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    
+    // Get current user from auth session
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -152,10 +216,22 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // Verify trip belongs to user
+    const { data: trip } = await supabase
+      .from('saved_trips')
+      .select('user_id')
+      .eq('id', id)
+      .single();
 
-    const { error } = await (supabase
-      .from('saved_trips') as any)
+    if (!trip || trip.user_id !== authUser.id) {
+      return NextResponse.json(
+        { error: 'Trip not found or access denied' },
+        { status: 404 }
+      );
+    }
+
+    const { error } = await supabase
+      .from('saved_trips')
       .delete()
       .eq('id', id);
 

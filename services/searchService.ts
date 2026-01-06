@@ -11,7 +11,7 @@ const computeTotalPrice = (offer: Partial<Offer>): number => {
 
   // Anti-Fake-Cheap logic from PRD
   if (offer.baggage_included === undefined || offer.baggage_included === false) {
-    penalty += PRICE_PENALTIES.NO_BAGgage;
+    penalty += PRICE_PENALTIES.NO_BAGGAGE;
   }
   if (offer.carryon_included === false) {
     penalty += PRICE_PENALTIES.NO_CARRYON;

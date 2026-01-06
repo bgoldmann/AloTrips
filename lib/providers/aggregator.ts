@@ -10,6 +10,7 @@ import { logProviderError } from '@/lib/errors/logger';
 class InMemoryCache {
   private cache: Map<string, CacheEntry> = new Map();
   private defaultTtl = 5 * 60 * 1000; // 5 minutes
+  private maxSize = 1000; // Maximum number of cache entries to prevent memory leaks
 
   get(key: string): Offer[] | null {
     const entry = this.cache.get(key);
@@ -27,6 +28,14 @@ class InMemoryCache {
   }
 
   set(key: string, data: Offer[], ttl?: number): void {
+    // Evict oldest entries if cache is full
+    if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
+    }
+    
     this.cache.set(key, {
       key,
       data,

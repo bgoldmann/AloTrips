@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
       booking_reference,
       metadata: metadata || {},
     };
-    const { error } = await (supabase
-      .from('affiliate_conversions') as any)
+    const { error } = await supabase
+      .from('affiliate_conversions')
       .insert(conversionData);
 
     if (error) {

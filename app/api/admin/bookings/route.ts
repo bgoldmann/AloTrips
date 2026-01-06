@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkAdminAccess, requireAdmin } from '@/lib/auth/admin';
 
 /**
  * GET /api/admin/bookings
@@ -7,10 +8,22 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Check admin access
+    const authError = await checkAdminAccess();
+    if (authError) return authError;
+
+    const admin = await requireAdmin();
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const supabase = admin.supabase;
     const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10) || 50));
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
     const provider = searchParams.get('provider') || '';
@@ -88,6 +101,18 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    // Check admin access
+    const authError = await checkAdminAccess();
+    if (authError) return authError;
+
+    const admin = await requireAdmin();
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { id, status } = body;
 
@@ -98,14 +123,22 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // Validate status value
+    if (!['Confirmed', 'Pending', 'Cancelled'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status value' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = admin.supabase;
 
     const updateData = {
       status,
       updated_at: new Date().toISOString(),
     };
-    const { data, error } = await (supabase
-      .from('bookings') as any)
+    const { data, error } = await supabase
+      .from('bookings')
       .update(updateData)
       .eq('id', id)
       .select()

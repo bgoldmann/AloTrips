@@ -79,8 +79,8 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const { data, error } = await (supabase
-      .from('property_reviews') as any)
+    const { data, error } = await supabase
+      .from('property_reviews')
       .insert({
         property_id: propertyId,
         user_id: userId || null,

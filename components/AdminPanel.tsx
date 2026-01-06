@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { LayoutDashboard, Users, CreditCard, ShoppingBag, TrendingUp, Search, Filter, AlertCircle, CheckCircle, Edit, Trash2, Save, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AdminStats, Booking } from '../types';
@@ -63,19 +63,7 @@ const AdminPanel: React.FC = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 'bookings') {
-      fetchBookings();
-    }
-  }, [activeTab, bookingsPage, bookingsSearch, bookingsStatusFilter]);
-
-  useEffect(() => {
-    if (activeTab === 'users') {
-      fetchUsers();
-    }
-  }, [activeTab, usersPage, usersSearch, usersTierFilter]);
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       const params = new URLSearchParams({
         page: bookingsPage.toString(),
@@ -93,9 +81,9 @@ const AdminPanel: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch bookings:', error);
     }
-  };
+  }, [bookingsPage, bookingsSearch, bookingsStatusFilter]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const params = new URLSearchParams({
         page: usersPage.toString(),
@@ -113,7 +101,19 @@ const AdminPanel: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch users:', error);
     }
-  };
+  }, [usersPage, usersSearch, usersTierFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'bookings') {
+      fetchBookings();
+    }
+  }, [activeTab, fetchBookings]);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [activeTab, fetchUsers]);
 
   const handleUpdateBooking = async (id: string) => {
     try {
@@ -306,15 +306,7 @@ const AdminPanel: React.FC = () => {
                            { name: 'Direct', val: 25, color: 'bg-blue-500' },
                            { name: 'Social', val: 20, color: 'bg-purple-500' },
                            { name: 'Referral', val: 10, color: 'bg-green-500' },
-                        ].map((item) => {
-                           const progressRef = React.useRef<HTMLDivElement>(null);
-                           React.useEffect(() => {
-                              if (progressRef.current) {
-                                 progressRef.current.style.setProperty('--progress-width', `${item.val}%`);
-                              }
-                           }, [item.val]);
-                           
-                           return (
+                        ].map((item) => (
                               <div key={item.name}>
                                  <div className="flex justify-between text-sm mb-1">
                                     <span className="font-medium text-gray-600">{item.name}</span>
@@ -322,16 +314,17 @@ const AdminPanel: React.FC = () => {
                                  </div>
                                  <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
                                     <div 
-                                       ref={progressRef}
                                        className={`${item.color} h-full rounded-full progress-bar`}
+                                       style={{ width: `${item.val}%` }}
                                        role="progressbar" 
-                                       {...{ 'aria-valuenow': item.val, 'aria-valuemin': 0, 'aria-valuemax': 100 }}
+                                       aria-valuenow={item.val}
+                                       aria-valuemin={0}
+                                       aria-valuemax={100}
                                        aria-label={`${item.name}: ${item.val}%`}
                                     ></div>
                                  </div>
                               </div>
-                           );
-                        })}
+                           ))}
                      </div>
                   </div>
                </div>

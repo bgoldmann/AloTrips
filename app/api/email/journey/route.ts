@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // Create email trigger
-    const { data, error } = await (supabase
-      .from('email_journey_triggers') as any)
+    const { data, error } = await supabase
+      .from('email_journey_triggers')
       .insert({
         user_id: userId,
         trigger_type: triggerType,
@@ -205,8 +205,8 @@ export async function PUT(request: NextRequest) {
       updateData.status = newStatus;
     }
 
-    const { data, error } = await (supabase
-      .from('email_journey_triggers') as any)
+    const { data, error } = await supabase
+      .from('email_journey_triggers')
       .update(updateData)
       .eq('id', id)
       .select()

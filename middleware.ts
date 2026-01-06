@@ -6,6 +6,7 @@ import type { NextRequest } from 'next/server';
  * For production, use Redis or a dedicated rate limiting service
  */
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+const MAX_STORE_SIZE = 10000; // Maximum number of entries to prevent memory leaks
 
 /**
  * Rate limit configuration
@@ -53,6 +54,14 @@ function checkRateLimit(
 
   // Check or create rate limit record
   if (!record || now > record.resetTime) {
+    // Evict oldest entries if store is too large
+    if (rateLimitStore.size >= MAX_STORE_SIZE) {
+      const oldestKey = rateLimitStore.keys().next().value;
+      if (oldestKey) {
+        rateLimitStore.delete(oldestKey);
+      }
+    }
+    
     // New window
     rateLimitStore.set(key, {
       count: 1,

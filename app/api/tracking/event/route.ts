@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
         metadata: metadata || {},
       };
       
-      const { error } = await (supabase
-        .from('affiliate_clicks') as any)
+      const { error } = await supabase
+        .from('affiliate_clicks')
         .insert(clickData);
 
       if (error) {

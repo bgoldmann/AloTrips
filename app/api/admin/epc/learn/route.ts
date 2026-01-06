@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
       const confidenceScore = Math.min(1.0, Math.log10(sampleSize + 1) / 3); // Logarithmic scale
 
       // Upsert EPC learning data
-      const { error: upsertError } = await (supabase
-        .from('epc_learning') as any)
+      const { error: upsertError } = await supabase
+        .from('epc_learning')
         .upsert({
           provider: data.provider,
           vertical: data.vertical,

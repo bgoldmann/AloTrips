@@ -1,9 +1,22 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkAdminAccess, requireAdmin } from '@/lib/auth/admin';
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    // Check admin access
+    const authError = await checkAdminAccess();
+    if (authError) return authError;
+
+    const admin = await requireAdmin();
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const supabase = admin.supabase;
 
     // Get total bookings count
     const { count: totalBookings } = await supabase

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkAdminAccess, requireAdmin } from '@/lib/auth/admin';
 
 /**
  * GET /api/admin/users
@@ -7,10 +8,22 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Check admin access
+    const authError = await checkAdminAccess();
+    if (authError) return authError;
+
+    const admin = await requireAdmin();
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const supabase = admin.supabase;
     const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10) || 50));
     const search = searchParams.get('search') || '';
     const tier = searchParams.get('tier') || '';
 
@@ -68,6 +81,18 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    // Check admin access
+    const authError = await checkAdminAccess();
+    if (authError) return authError;
+
+    const admin = await requireAdmin();
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -78,14 +103,14 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = admin.supabase;
 
     const updateData = {
       ...updates,
       updated_at: new Date().toISOString(),
     };
-    const { data, error } = await (supabase
-      .from('users') as any)
+    const { data, error } = await supabase
+      .from('users')
       .update(updateData)
       .eq('id', id)
       .select()
@@ -115,6 +140,18 @@ export async function PUT(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
+    // Check admin access
+    const authError = await checkAdminAccess();
+    if (authError) return authError;
+
+    const admin = await requireAdmin();
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -125,7 +162,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = admin.supabase;
 
     // For safety, we'll do a soft delete by updating a deleted_at field
     // If the field doesn't exist, we'll just delete

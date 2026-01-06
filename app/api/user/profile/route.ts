@@ -5,11 +5,20 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     
-    // For now, return mock user. In production, get from auth session
+    // Get current user from auth session
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', 'u_12345')
+      .eq('id', authUser.id)
       .single();
 
     if (error) {
@@ -67,8 +76,8 @@ export async function PUT(request: NextRequest) {
       currency_preference: body.currencyPreference,
       updated_at: new Date().toISOString(),
     };
-    const { data, error } = await (supabase
-      .from('users') as any)
+    const { data, error } = await supabase
+      .from('users')
       .update(updateData)
       .eq('id', body.id)
       .select()
