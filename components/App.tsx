@@ -220,23 +220,37 @@ const App: React.FC = () => {
         rooms: activeVertical === 'stays' ? travelers.rooms : undefined,
         tripType: activeVertical === 'flights' ? tripType : undefined,
         includeNearbyAirports: activeVertical === 'flights' ? includeNearbyAirports : undefined,
+        flexibleDays: flexibleDays > 0 ? flexibleDays : undefined,
+        flightSegments: activeVertical === 'flights' && tripType === 'multi-city' && flightSegments.length > 0 
+          ? flightSegments.map(seg => ({
+              origin: seg.origin,
+              destination: seg.destination,
+              date: seg.date instanceof Date ? seg.date.toISOString().split('T')[0] : seg.date,
+            }))
+          : undefined,
       };
 
       // For packages, call API directly to get bundled results
       if (activeVertical === 'packages') {
         try {
-          const response = await fetch(`/api/search?${new URLSearchParams({
+          const params = new URLSearchParams({
             vertical: activeVertical,
             destination: searchParams.destination,
             startDate: searchParams.startDate,
-            ...(searchParams.endDate && { endDate: searchParams.endDate }),
-            ...(searchParams.origin && { origin: searchParams.origin }),
             travelers: String(searchParams.travelers),
-            ...(searchParams.adults && { adults: String(searchParams.adults) }),
-            ...(searchParams.children && { children: String(searchParams.children) }),
-            ...(searchParams.rooms && { rooms: String(searchParams.rooms) }),
-            ...(searchParams.tripType && { tripType: searchParams.tripType }),
-          }).toString()}`);
+          });
+          
+          if (searchParams.endDate) params.append('endDate', searchParams.endDate);
+          if (searchParams.origin) params.append('origin', searchParams.origin);
+          if (searchParams.adults) params.append('adults', String(searchParams.adults));
+          if (searchParams.children) params.append('children', String(searchParams.children));
+          if (searchParams.rooms) params.append('rooms', String(searchParams.rooms));
+          if (searchParams.tripType) params.append('tripType', searchParams.tripType);
+          if (searchParams.flightSegments && searchParams.flightSegments.length > 0) {
+            params.append('flightSegments', JSON.stringify(searchParams.flightSegments));
+          }
+          
+          const response = await fetch(`/api/search?${params.toString()}`);
           
           if (!response.ok) {
             throw new Error(`Search failed: ${response.statusText}`);

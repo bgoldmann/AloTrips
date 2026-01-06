@@ -207,6 +207,11 @@ export const searchOffers = async (
       if (searchParams.children) params.append('children', searchParams.children.toString());
       if (searchParams.rooms) params.append('rooms', searchParams.rooms.toString());
       if (searchParams.tripType) params.append('tripType', searchParams.tripType);
+      if (searchParams.flexibleDays) params.append('flexibleDays', searchParams.flexibleDays.toString());
+      if (searchParams.includeNearbyAirports) params.append('includeNearbyAirports', 'true');
+      if (searchParams.flightSegments && searchParams.flightSegments.length > 0) {
+        params.append('flightSegments', JSON.stringify(searchParams.flightSegments));
+      }
     }
 
     const response = await fetch(`/api/search?${params.toString()}`);

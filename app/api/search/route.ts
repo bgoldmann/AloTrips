@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
           useCache: true,
         });
         for (const response of flightResponses) {
-          if (response.data && response.data.length > 0) {
+          if (response.data && Array.isArray(response.data) && response.data.length > 0) {
             flights.push(...response.data);
           }
         }
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
           useCache: true,
         });
         for (const response of hotelResponses) {
-          if (response.data && response.data.length > 0) {
+          if (response.data && Array.isArray(response.data) && response.data.length > 0) {
             hotels.push(...response.data);
           }
         }
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
           useCache: true,
         });
         for (const response of carResponses) {
-          if (response.data && response.data.length > 0) {
+          if (response.data && Array.isArray(response.data) && response.data.length > 0) {
             cars.push(...response.data);
           }
         }
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
           
           const segmentResults: Offer[] = [];
           for (const response of segmentResponses) {
-            if (response.data && response.data.length > 0) {
+            if (response.data && Array.isArray(response.data) && response.data.length > 0) {
               segmentResults.push(...response.data);
             }
           }
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
       
       // Combine segments (for now, take top offers from each segment)
       // In a full implementation, you'd create multi-city itineraries
-      if (segmentOffers.length > 0) {
+      if (segmentOffers.length > 0 && segmentOffers[0] && segmentOffers[0].length > 0) {
         // For simplicity, return offers from first segment
         // A full implementation would create all possible combinations
         allOffers.push(...segmentOffers[0]);
@@ -217,7 +217,7 @@ export async function GET(request: NextRequest) {
 
           // Aggregate offers from all providers
           for (const response of providerResponses) {
-            if (response.data && response.data.length > 0) {
+            if (response.data && Array.isArray(response.data) && response.data.length > 0) {
               // Tag offers with their origin/destination airports for display
               const taggedOffers = response.data.map(offer => ({
                 ...offer,
@@ -299,13 +299,16 @@ export async function GET(request: NextRequest) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: userData } = await supabase
+        const { data: userData, error: userError } = await supabase
           .from('users')
           .select('tier')
           .eq('id', user.id)
           .single();
-        if (userData?.tier) {
-          userTier = userData.tier as 'Silver' | 'Gold' | 'Platinum';
+        if (!userError && userData) {
+          const tier = (userData as { tier?: string }).tier;
+          if (tier && (tier === 'Silver' || tier === 'Gold' || tier === 'Platinum')) {
+            userTier = tier;
+          }
         }
       }
     } catch (error) {
@@ -313,19 +316,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply member pricing if user tier qualifies
-    const tierHierarchy = { Silver: 1, Gold: 2, Platinum: 3 };
+    const tierHierarchy: Record<'Silver' | 'Gold' | 'Platinum', number> = { Silver: 1, Gold: 2, Platinum: 3 };
     if (userTier) {
       allOffers.forEach(offer => {
         if (offer.member_price && offer.member_tier_required) {
           const userTierLevel = tierHierarchy[userTier];
           const requiredTierLevel = tierHierarchy[offer.member_tier_required];
-          if (userTierLevel >= requiredTierLevel) {
+          if (userTierLevel !== undefined && requiredTierLevel !== undefined && userTierLevel >= requiredTierLevel) {
             // User qualifies for member price - store original for display
             const originalTotal = offer.total_price;
             offer.total_price = offer.member_price;
-            // Store original price for display
-            (offer as any).original_price = originalTotal;
-            (offer as any).is_member_deal = true;
+            // Store original price for display (extend Offer type with these properties)
+            Object.assign(offer, {
+              original_price: originalTotal,
+              is_member_deal: true,
+            });
           }
         }
       });
@@ -407,15 +412,14 @@ export async function GET(request: NextRequest) {
             is_cheapest: offer.isCheapest || false,
             is_best_value: offer.isBestValue || false,
           }));
-      supabase
-        .from('offers')
-        .upsert(upsertData, { onConflict: 'id' })
-        .then(() => {
-          // Silently handle errors
-        })
-        .catch(() => {
-          // Silently handle errors
-        });
+      // Save to database for future reference (async, don't wait)
+      Promise.resolve(
+        supabase
+          .from('offers')
+          .upsert(upsertData as any, { onConflict: 'id' })
+      ).catch(() => {
+        // Silently handle errors
+      });
     }
 
     return NextResponse.json({ offers: processedOffers });

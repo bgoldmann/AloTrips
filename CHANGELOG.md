@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `app/api/affiliate/postback/route.ts`
 - **Memory Leak Prevention**: Added cache size limit (max 1000 entries) to `InMemoryCache` class in `lib/providers/aggregator.ts` to prevent unbounded memory growth
 - **Security**: Added try-catch wrapper around `JSON.parse` for `flightSegments` parameter in `app/api/search/route.ts` to prevent crashes from malformed JSON input
+- **Type Safety**: Fixed unsafe type assertions in member pricing logic in `app/api/search/route.ts` - replaced `as any` with proper `Object.assign` for extending Offer type
+- **Null Safety**: Added comprehensive array type checks (`Array.isArray`) before calling `.map()`, `.filter()`, or `.push()` operations in `app/api/search/route.ts` to prevent runtime errors
+- **Null Safety**: Added null check for `segmentOffers[0]` before accessing array elements in multi-city flight handling to prevent potential null pointer errors
+- **Type Safety**: Fixed TypeScript errors in user tier lookup by adding proper type assertions and null checks in `app/api/search/route.ts`
+- **Type Safety**: Fixed Supabase upsert type error by properly handling promise chain and type assertions
+- **Feature**: Added `flightSegments`, `flexibleDays`, and `includeNearbyAirports` parameter handling in `services/searchService.ts` to ensure all search parameters are properly passed to API
+- **Feature**: Enhanced multi-city flight search in `components/App.tsx` to properly serialize and send flight segments to the API
 
 ### Security
 - **Input Validation**: Added safe JSON parsing with error handling for `flightSegments` parameter to prevent potential crashes from malformed user input
