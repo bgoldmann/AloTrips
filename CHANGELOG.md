@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CHANGELOG.md file for tracking changes
 - **Documentation**: Created `DEPLOYMENT.md` with comprehensive deployment guide for Vercel
 - **Environment Template**: Created `.env.example` file (note: actual file creation blocked by gitignore, but template exists in `env.txt`)
+- **Analytics**: Added Google Analytics (gtag.js) tracking code (G-93ZEJ4BLJ4) to root layout using Next.js Script component
 
 ### Changed
 - N/A
