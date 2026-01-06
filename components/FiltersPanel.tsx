@@ -73,6 +73,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
           <button
             onClick={onClose}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Close filters panel"
           >
             <X size={18} className="text-gray-500" />
           </button>
@@ -85,8 +86,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
           <h4 className="text-sm font-bold text-gray-700 mb-3">Price Range</h4>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Min Price</label>
+              <label htmlFor="filter-min-price" className="text-xs text-gray-500 mb-1 block">Min Price</label>
               <input
+                id="filter-min-price"
                 type="number"
                 value={localFilters.minPrice || ''}
                 onChange={(e) => updateFilter({ minPrice: e.target.value ? Number(e.target.value) : undefined })}
@@ -95,8 +97,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Max Price</label>
+              <label htmlFor="filter-max-price" className="text-xs text-gray-500 mb-1 block">Max Price</label>
               <input
+                id="filter-max-price"
                 type="number"
                 value={localFilters.maxPrice || ''}
                 onChange={(e) => updateFilter({ maxPrice: e.target.value ? Number(e.target.value) : undefined })}
@@ -133,8 +136,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
               <h4 className="text-sm font-bold text-gray-700 mb-3">Departure Time</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">From</label>
+                  <label htmlFor="filter-departure-time-start" className="text-xs text-gray-500 mb-1 block">From</label>
                   <input
+                    id="filter-departure-time-start"
                     type="time"
                     value={localFilters.departureTimeStart || ''}
                     onChange={(e) => updateFilter({ departureTimeStart: e.target.value || undefined })}
@@ -142,8 +146,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">To</label>
+                  <label htmlFor="filter-departure-time-end" className="text-xs text-gray-500 mb-1 block">To</label>
                   <input
+                    id="filter-departure-time-end"
                     type="time"
                     value={localFilters.departureTimeEnd || ''}
                     onChange={(e) => updateFilter({ departureTimeEnd: e.target.value || undefined })}
@@ -180,7 +185,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
             <div>
               <h4 className="text-sm font-bold text-gray-700 mb-3">Guest Rating</h4>
               <div className="flex items-center gap-3">
+                <label htmlFor="filter-min-rating-stays" className="sr-only">Minimum guest rating</label>
                 <input
+                  id="filter-min-rating-stays"
                   type="range"
                   min="0"
                   max="5"
@@ -188,8 +195,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   value={localFilters.minRating || 0}
                   onChange={(e) => updateFilter({ minRating: Number(e.target.value) || undefined })}
                   className="flex-1 accent-orange-500"
+                  aria-label="Minimum guest rating"
                 />
-                <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-right">
+                <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-right" aria-live="polite">
                   {localFilters.minRating ? localFilters.minRating.toFixed(1) : 'Any'}
                 </span>
               </div>
@@ -370,7 +378,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
             <div>
               <h4 className="text-sm font-bold text-gray-700 mb-3">Guest Rating</h4>
               <div className="flex items-center gap-3">
+                <label htmlFor="filter-min-rating-activities" className="sr-only">Minimum guest rating</label>
                 <input
+                  id="filter-min-rating-activities"
                   type="range"
                   min="0"
                   max="5"
@@ -378,8 +388,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   value={localFilters.minRating || 0}
                   onChange={(e) => updateFilter({ minRating: Number(e.target.value) || undefined })}
                   className="flex-1 accent-orange-500"
+                  aria-label="Minimum guest rating"
                 />
-                <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-right">
+                <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-right" aria-live="polite">
                   {localFilters.minRating ? localFilters.minRating.toFixed(1) : 'Any'}
                 </span>
               </div>
@@ -462,8 +473,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
               <h4 className="text-sm font-bold text-gray-700 mb-3">Duration (Nights)</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Min</label>
+                  <label htmlFor="filter-cruise-duration-min" className="text-xs text-gray-500 mb-1 block">Min</label>
                   <input
+                    id="filter-cruise-duration-min"
                     type="number"
                     min="1"
                     value={localFilters.cruiseDurationMin || ''}
@@ -475,8 +487,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Max</label>
+                  <label htmlFor="filter-cruise-duration-max" className="text-xs text-gray-500 mb-1 block">Max</label>
                   <input
+                    id="filter-cruise-duration-max"
                     type="number"
                     min="1"
                     value={localFilters.cruiseDurationMax || ''}
@@ -521,7 +534,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
             <div>
               <h4 className="text-sm font-bold text-gray-700 mb-3">Guest Rating</h4>
               <div className="flex items-center gap-3">
+                <label htmlFor="filter-min-rating-cruises" className="sr-only">Minimum guest rating</label>
                 <input
+                  id="filter-min-rating-cruises"
                   type="range"
                   min="0"
                   max="5"
@@ -529,8 +544,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   value={localFilters.minRating || 0}
                   onChange={(e) => updateFilter({ minRating: Number(e.target.value) || undefined })}
                   className="flex-1 accent-blue-500"
+                  aria-label="Minimum guest rating"
                 />
-                <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-right">
+                <span className="text-sm font-bold text-gray-700 min-w-[3rem] text-right" aria-live="polite">
                   {localFilters.minRating ? localFilters.minRating.toFixed(1) : 'Any'}
                 </span>
               </div>

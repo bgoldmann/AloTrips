@@ -304,7 +304,7 @@ const AdminPanel: React.FC = () => {
                                  <span className="font-bold text-gray-900">{item.val}%</span>
                               </div>
                               <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                 <div className={`${item.color} h-full rounded-full`} style={{width: `${item.val}%`}}></div>
+                                 <div className={`${item.color} h-full rounded-full`} style={{width: `${item.val}%`}} role="progressbar" aria-valuenow={item.val} aria-valuemin={0} aria-valuemax={100}></div>
                               </div>
                            </div>
                         ))}
@@ -320,8 +320,10 @@ const AdminPanel: React.FC = () => {
                   <h1 className="text-2xl font-black text-gray-900">Bookings Management</h1>
                   <div className="flex gap-2">
                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16}/>
+                        <label htmlFor="bookings-search" className="sr-only">Search bookings</label>
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} aria-hidden="true"/>
                         <input 
+                           id="bookings-search"
                            type="text" 
                            placeholder="Search bookings..." 
                            value={bookingsSearch}
@@ -330,6 +332,7 @@ const AdminPanel: React.FC = () => {
                               setBookingsPage(1);
                            }}
                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                           aria-label="Search bookings"
                         />
                      </div>
                      <select
@@ -339,6 +342,7 @@ const AdminPanel: React.FC = () => {
                            setBookingsPage(1);
                         }}
                         className="px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        aria-label="Filter bookings by status"
                      >
                         <option value="">All Status</option>
                         <option value="Confirmed">Confirmed</option>
@@ -383,6 +387,7 @@ const AdminPanel: React.FC = () => {
                                        value={editBookingStatus}
                                        onChange={(e) => setEditBookingStatus(e.target.value)}
                                        className="px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                       aria-label="Edit booking status"
                                     >
                                        <option value="Confirmed">Confirmed</option>
                                        <option value="Pending">Pending</option>
@@ -404,8 +409,9 @@ const AdminPanel: React.FC = () => {
                                        <button
                                           onClick={() => handleUpdateBooking(booking.id)}
                                           className="text-green-600 hover:text-green-700"
+                                          aria-label="Save booking changes"
                                        >
-                                          <Save size={16} />
+                                          <Save size={16} aria-hidden="true" />
                                        </button>
                                        <button
                                           onClick={() => {
@@ -413,8 +419,9 @@ const AdminPanel: React.FC = () => {
                                              setEditBookingStatus('');
                                           }}
                                           className="text-gray-600 hover:text-gray-700"
+                                          aria-label="Cancel editing"
                                        >
-                                          <X size={16} />
+                                          <X size={16} aria-hidden="true" />
                                        </button>
                                     </div>
                                  ) : (
@@ -452,16 +459,18 @@ const AdminPanel: React.FC = () => {
                               onClick={() => setBookingsPage(p => Math.max(1, p - 1))}
                               disabled={bookingsPage === 1}
                               className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              aria-label="Previous page"
                            >
-                              <ChevronLeft size={16} />
+                              <ChevronLeft size={16} aria-hidden="true" />
                            </button>
                            <span className="text-sm font-bold text-gray-700">Page {bookingsPage}</span>
                            <button
                               onClick={() => setBookingsPage(p => p + 1)}
                               disabled={bookingsPage * 50 >= bookingsTotal}
                               className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              aria-label="Next page"
                            >
-                              <ChevronRight size={16} />
+                              <ChevronRight size={16} aria-hidden="true" />
                            </button>
                         </div>
                      </div>
@@ -476,8 +485,10 @@ const AdminPanel: React.FC = () => {
                   <h1 className="text-2xl font-black text-gray-900">User Management</h1>
                   <div className="flex gap-2">
                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16}/>
+                        <label htmlFor="users-search" className="sr-only">Search users</label>
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} aria-hidden="true"/>
                         <input 
+                           id="users-search"
                            type="text" 
                            placeholder="Search users..." 
                            value={usersSearch}
@@ -486,6 +497,7 @@ const AdminPanel: React.FC = () => {
                               setUsersPage(1);
                            }}
                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                           aria-label="Search users"
                         />
                      </div>
                      <select
@@ -495,6 +507,7 @@ const AdminPanel: React.FC = () => {
                            setUsersPage(1);
                         }}
                         className="px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        aria-label="Filter users by tier"
                      >
                         <option value="">All Tiers</option>
                         <option value="Silver">Silver</option>
@@ -553,6 +566,7 @@ const AdminPanel: React.FC = () => {
                                        value={editUserData.tier || user.tier}
                                        onChange={(e) => setEditUserData({ ...editUserData, tier: e.target.value as 'Silver' | 'Gold' | 'Platinum' })}
                                        className="px-2 py-1 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                       aria-label={`Edit tier for ${user.first_name} ${user.last_name}`}
                                     >
                                        <option value="Silver">Silver</option>
                                        <option value="Gold">Gold</option>
@@ -575,6 +589,7 @@ const AdminPanel: React.FC = () => {
                                        value={editUserData.points !== undefined ? editUserData.points : user.points}
                                        onChange={(e) => setEditUserData({ ...editUserData, points: parseInt(e.target.value) })}
                                        className="w-20 px-2 py-1 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                       aria-label={`Edit points for ${user.first_name} ${user.last_name}`}
                                     />
                                  ) : (
                                     user.points.toLocaleString()
@@ -589,8 +604,9 @@ const AdminPanel: React.FC = () => {
                                        <button
                                           onClick={() => handleUpdateUser(user.id)}
                                           className="text-green-600 hover:text-green-700"
+                                          aria-label={`Save changes for ${user.first_name} ${user.last_name}`}
                                        >
-                                          <Save size={16} />
+                                          <Save size={16} aria-hidden="true" />
                                        </button>
                                        <button
                                           onClick={() => {
@@ -598,8 +614,9 @@ const AdminPanel: React.FC = () => {
                                              setEditUserData({});
                                           }}
                                           className="text-gray-600 hover:text-gray-700"
+                                          aria-label="Cancel editing"
                                        >
-                                          <X size={16} />
+                                          <X size={16} aria-hidden="true" />
                                        </button>
                                     </div>
                                  ) : (
@@ -610,14 +627,16 @@ const AdminPanel: React.FC = () => {
                                              setEditUserData({});
                                           }}
                                           className="text-blue-600 font-bold hover:underline flex items-center gap-1"
+                                          aria-label={`Edit ${user.first_name} ${user.last_name}`}
                                        >
-                                          <Edit size={14} /> Edit
+                                          <Edit size={14} aria-hidden="true" /> Edit
                                        </button>
                                        <button
                                           onClick={() => handleDeleteUser(user.id)}
                                           className="text-red-600 hover:text-red-700"
+                                          aria-label={`Delete ${user.first_name} ${user.last_name}`}
                                        >
-                                          <Trash2 size={14} />
+                                          <Trash2 size={14} aria-hidden="true" />
                                        </button>
                                     </div>
                                  )}
@@ -645,16 +664,18 @@ const AdminPanel: React.FC = () => {
                               onClick={() => setUsersPage(p => Math.max(1, p - 1))}
                               disabled={usersPage === 1}
                               className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              aria-label="Previous page"
                            >
-                              <ChevronLeft size={16} />
+                              <ChevronLeft size={16} aria-hidden="true" />
                            </button>
                            <span className="text-sm font-bold text-gray-700">Page {usersPage}</span>
                            <button
                               onClick={() => setUsersPage(p => p + 1)}
                               disabled={usersPage * 50 >= usersTotal}
                               className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              aria-label="Next page"
                            >
-                              <ChevronRight size={16} />
+                              <ChevronRight size={16} aria-hidden="true" />
                            </button>
                         </div>
                      </div>

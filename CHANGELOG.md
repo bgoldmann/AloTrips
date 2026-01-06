@@ -458,6 +458,21 @@ All notable changes to this project will be documented in this file.
     - Error handling
     - Responsive design
     - Proper TypeScript types
+- **Accessibility & Code Quality Improvements (2025-01-05)** - Comprehensive accessibility fixes:
+  - Fixed all missing aria-labels on icon-only buttons (Edit, Delete, Save, Cancel, pagination)
+  - Added htmlFor/id connections between labels and form inputs in FiltersPanel
+  - Added aria-labels to all select elements in AdminPanel and affiliate page
+  - Fixed form inputs with proper label associations (date inputs, number inputs, range sliders)
+  - Added aria-live regions for dynamic content updates
+  - Removed inline style prop from App.tsx (animationDelay) - using CSS classes instead
+  - Added proper ARIA attributes to progress bars
+  - Fixed all accessibility linting errors for better screen reader support
+  - Improved keyboard navigation support throughout the application
+  - Fixed aria-expanded attribute to use string values ('true'/'false') instead of boolean
+  - Added aria-labels to all search input fields with sr-only labels
+  - Added aria-hidden="true" to decorative icons within buttons
+  - Fixed build error: Installed missing postcss dependency (npm install)
+  - All components now build successfully with Next.js 15
 
 ### Technical
 - Next.js 15 App Router architecture

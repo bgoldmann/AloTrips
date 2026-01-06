@@ -340,7 +340,7 @@ const App: React.FC = () => {
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="hidden md:flex items-center gap-2 hover:bg-orange-50 pl-2 pr-4 py-1.5 rounded-full transition-all border border-transparent hover:border-orange-100"
                     aria-label="User menu"
-                    aria-expanded={isUserMenuOpen}
+                    aria-expanded={isUserMenuOpen ? 'true' : 'false'}
                     aria-haspopup="true"
                   >
                  <Image src={avatar} width={32} height={32} className="rounded-full border border-gray-200" alt="Avatar" unoptimized={avatar?.includes('pravatar.cc')}/>
@@ -658,7 +658,6 @@ const App: React.FC = () => {
                                className={`animate-in fade-in slide-in-from-bottom-4 transition-all ${
                                  selectedOfferId === offer.id ? 'ring-2 ring-orange-500 rounded-2xl p-2' : ''
                                }`}
-                               style={{animationDelay: `${index * 100}ms`}}
                                onMouseEnter={() => setSelectedOfferId(offer.id)}
                                onMouseLeave={() => setSelectedOfferId(undefined)}
                              >

@@ -179,8 +179,9 @@ export default function AffiliateDashboard() {
             <Calendar size={18} className="text-gray-400" />
             <div className="flex items-center gap-3">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
+                <label htmlFor="affiliate-start-date" className="text-xs text-gray-500 mb-1 block">Start Date</label>
                 <input
+                  id="affiliate-start-date"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
@@ -188,8 +189,9 @@ export default function AffiliateDashboard() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">End Date</label>
+                <label htmlFor="affiliate-end-date" className="text-xs text-gray-500 mb-1 block">End Date</label>
                 <input
+                  id="affiliate-end-date"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
