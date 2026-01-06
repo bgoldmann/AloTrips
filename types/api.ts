@@ -1,4 +1,5 @@
-import { Offer, PackageOffer } from './index';
+import { Offer } from '../types';
+import { PackageOffer } from '../lib/packages/bundler';
 
 /**
  * API Response types

@@ -115,7 +115,7 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
                                </div>
                             </div>
                             <span className="text-[10px] text-orange-600 font-bold mt-1">
-                               {offer.stops === 0 ? 'Non-stop' : `${offer.stops} Stop${offer.stops > 1 ? 's' : ''}`}
+                               {offer.stops === 0 ? 'Non-stop' : `${offer.stops ?? 0} Stop${(offer.stops ?? 0) > 1 ? 's' : ''}`}
                             </span>
                          </div>
 

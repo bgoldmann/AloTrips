@@ -52,8 +52,10 @@ export async function GET(request: NextRequest) {
     const { data: clicksByProvider } = await clicksByProviderQuery;
 
     const providerCounts: Record<string, number> = {};
-    clicksByProvider?.forEach((click) => {
-      providerCounts[click.provider] = (providerCounts[click.provider] || 0) + 1;
+    clicksByProvider?.forEach((click: any) => {
+      if (click?.provider) {
+        providerCounts[click.provider] = (providerCounts[click.provider] || 0) + 1;
+      }
     });
 
     // 3. Clicks by Vertical
@@ -70,8 +72,10 @@ export async function GET(request: NextRequest) {
     const { data: clicksByVertical } = await clicksByVerticalQuery;
 
     const verticalCounts: Record<string, number> = {};
-    clicksByVertical?.forEach((click) => {
-      verticalCounts[click.vertical] = (verticalCounts[click.vertical] || 0) + 1;
+    clicksByVertical?.forEach((click: any) => {
+      if (click?.vertical) {
+        verticalCounts[click.vertical] = (verticalCounts[click.vertical] || 0) + 1;
+      }
     });
 
     // 4. Clicks by Placement
@@ -88,8 +92,10 @@ export async function GET(request: NextRequest) {
     const { data: clicksByPlacement } = await clicksByPlacementQuery;
 
     const placementCounts: Record<string, number> = {};
-    clicksByPlacement?.forEach((click) => {
-      placementCounts[click.placement] = (placementCounts[click.placement] || 0) + 1;
+    clicksByPlacement?.forEach((click: any) => {
+      if (click?.placement) {
+        placementCounts[click.placement] = (placementCounts[click.placement] || 0) + 1;
+      }
     });
 
     // 5. Total Conversions
@@ -112,7 +118,7 @@ export async function GET(request: NextRequest) {
 
     // 7. Total Revenue (from conversions)
     const totalRevenue = allConversions?.reduce(
-      (sum, conv) => sum + Number(conv.amount || 0),
+      (sum, conv: any) => sum + Number(conv?.amount || 0),
       0
     ) || 0;
 
@@ -135,12 +141,14 @@ export async function GET(request: NextRequest) {
     const { data: conversionsByProvider } = await conversionsByProviderQuery;
 
     const providerRevenue: Record<string, { revenue: number; conversions: number }> = {};
-    conversionsByProvider?.forEach((conv) => {
-      if (!providerRevenue[conv.provider]) {
-        providerRevenue[conv.provider] = { revenue: 0, conversions: 0 };
+    conversionsByProvider?.forEach((conv: any) => {
+      if (conv?.provider) {
+        if (!providerRevenue[conv.provider]) {
+          providerRevenue[conv.provider] = { revenue: 0, conversions: 0 };
+        }
+        providerRevenue[conv.provider].revenue += Number(conv.amount || 0);
+        providerRevenue[conv.provider].conversions += 1;
       }
-      providerRevenue[conv.provider].revenue += Number(conv.amount || 0);
-      providerRevenue[conv.provider].conversions += 1;
     });
 
     // 10. Conversions by Vertical
@@ -157,12 +165,14 @@ export async function GET(request: NextRequest) {
     const { data: conversionsByVertical } = await conversionsByVerticalQuery;
 
     const verticalRevenue: Record<string, { revenue: number; conversions: number }> = {};
-    conversionsByVertical?.forEach((conv) => {
-      if (!verticalRevenue[conv.vertical]) {
-        verticalRevenue[conv.vertical] = { revenue: 0, conversions: 0 };
+    conversionsByVertical?.forEach((conv: any) => {
+      if (conv?.vertical) {
+        if (!verticalRevenue[conv.vertical]) {
+          verticalRevenue[conv.vertical] = { revenue: 0, conversions: 0 };
+        }
+        verticalRevenue[conv.vertical].revenue += Number(conv.amount || 0);
+        verticalRevenue[conv.vertical].conversions += 1;
       }
-      verticalRevenue[conv.vertical].revenue += Number(conv.amount || 0);
-      verticalRevenue[conv.vertical].conversions += 1;
     });
 
     // 11. Daily Click/Conversion History (last 30 days)
@@ -182,21 +192,23 @@ export async function GET(request: NextRequest) {
     // Group by date
     const dailyStats: Record<string, { clicks: number; conversions: number; revenue: number }> = {};
     
-    dailyClicks?.forEach((click) => {
-      const date = new Date(click.created_at).toISOString().split('T')[0];
-      if (!dailyStats[date]) {
-        dailyStats[date] = { clicks: 0, conversions: 0, revenue: 0 };
+    dailyClicks?.forEach((click: any) => {
+      if (click?.created_at) {
+        const date = new Date(click.created_at).toISOString().split('T')[0];
+        if (!dailyStats[date]) {
+          dailyStats[date] = { clicks: 0, conversions: 0, revenue: 0 };
+        }
+        dailyStats[date].clicks += 1;
       }
-      dailyStats[date].clicks += 1;
     });
 
-    dailyConversions?.forEach((conv) => {
+    dailyConversions?.forEach((conv: any) => {
       const date = new Date(conv.created_at).toISOString().split('T')[0];
       if (!dailyStats[date]) {
         dailyStats[date] = { clicks: 0, conversions: 0, revenue: 0 };
       }
       dailyStats[date].conversions += 1;
-      dailyStats[date].revenue += Number(conv.amount || 0);
+      dailyStats[date].revenue += Number(conv?.amount || 0);
     });
 
     // Convert to array format for charts
@@ -229,15 +241,15 @@ export async function GET(request: NextRequest) {
     // 13. Placement Performance
     const placementPerformance = Object.entries(placementCounts).map(([placement, clicks]) => {
       // Find conversions for this placement (need to join with clicks)
-      const placementClicks = allClicks?.filter(c => c.placement === placement) || [];
-      const placementClickIds = placementClicks.map(c => c.click_id);
+      const placementClicks = allClicks?.filter((c: any) => c?.placement === placement) || [];
+      const placementClickIds = placementClicks.map((c: any) => c?.click_id).filter(Boolean);
       
-      const placementConversions = allConversions?.filter(c => 
-        placementClickIds.includes(c.click_id)
+      const placementConversions = allConversions?.filter((c: any) => 
+        c?.click_id && placementClickIds.includes(c.click_id)
       ) || [];
       
       const placementRevenue = placementConversions.reduce(
-        (sum, conv) => sum + Number(conv.amount || 0),
+        (sum, conv: any) => sum + Number(conv?.amount || 0),
         0
       );
       const placementEpc = clicks > 0 ? placementRevenue / clicks : 0;

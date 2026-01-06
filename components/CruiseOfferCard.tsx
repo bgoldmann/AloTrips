@@ -11,16 +11,29 @@ interface CruiseOfferCardProps {
   offer: Offer;
 }
 
+// Type guard for cruise-specific properties
+type CruiseOffer = Offer & {
+  cruise_ship?: string;
+  cruise_line?: string;
+  cruise_region?: string;
+  cruise_duration?: number;
+  cruise_ports?: string[];
+  cruise_cabin_type?: string;
+  cruise_departure_port?: string;
+  cruise_itinerary?: string;
+};
+
 const CruiseOfferCard: React.FC<CruiseOfferCardProps> = ({ offer }) => {
   const { trackRedirect } = useTracking();
   const currencySymbol = getCurrencySymbol(offer.currency as any);
+  const cruiseOffer = offer as CruiseOffer;
 
   const handleViewDeal = () => {
     const { url } = trackRedirect(
       'cruises',
       offer.provider,
       'results_row',
-      offer.cruise_ship || offer.title
+      cruiseOffer.cruise_ship || offer.title
     );
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -37,9 +50,9 @@ const CruiseOfferCard: React.FC<CruiseOfferCardProps> = ({ offer }) => {
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           unoptimized={offer.image?.includes('picsum.photos')}
         />
-        {offer.cruise_line && (
+        {cruiseOffer.cruise_line && (
           <span className="absolute top-3 left-3 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
-            {offer.cruise_line}
+            {cruiseOffer.cruise_line}
           </span>
         )}
         {offer.isCheapest && (
@@ -57,14 +70,14 @@ const CruiseOfferCard: React.FC<CruiseOfferCardProps> = ({ offer }) => {
       <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3">
         <div className="flex-1">
           <h3 className="text-xl font-bold text-gray-900 mb-1">{offer.title}</h3>
-          {offer.cruise_ship && (
+          {cruiseOffer.cruise_ship && (
             <p className="text-sm text-gray-600 flex items-center gap-1.5 mb-2">
-              <Ship size={14} className="text-blue-500" /> {offer.cruise_ship}
+              <Ship size={14} className="text-blue-500" /> {cruiseOffer.cruise_ship}
             </p>
           )}
-          {offer.cruise_region && (
+          {cruiseOffer.cruise_region && (
             <p className="text-sm text-gray-600 flex items-center gap-1.5">
-              <MapPin size={14} className="text-blue-500" /> {offer.cruise_region}
+              <MapPin size={14} className="text-blue-500" /> {cruiseOffer.cruise_region}
             </p>
           )}
         </div>
@@ -72,7 +85,7 @@ const CruiseOfferCard: React.FC<CruiseOfferCardProps> = ({ offer }) => {
           <p className="text-sm text-gray-500">From</p>
           <p className="text-2xl font-black text-blue-600">
             {currencySymbol}
-            {convertedPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            {Math.round(offer.total_price).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </p>
           <p className="text-xs text-gray-500">per person</p>
         </div>
@@ -80,19 +93,19 @@ const CruiseOfferCard: React.FC<CruiseOfferCardProps> = ({ offer }) => {
 
       {/* Cruise Details */}
       <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm text-gray-700 mb-4">
-        {offer.cruise_duration && (
+        {cruiseOffer.cruise_duration && (
           <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-blue-500" /> {offer.cruise_duration} nights
+            <Calendar size={16} className="text-blue-500" /> {cruiseOffer.cruise_duration} nights
           </div>
         )}
-        {offer.cruise_departure_port && (
+        {cruiseOffer.cruise_departure_port && (
           <div className="flex items-center gap-2">
-            <MapPin size={16} className="text-blue-500" /> Departs: {offer.cruise_departure_port}
+            <MapPin size={16} className="text-blue-500" /> Departs: {cruiseOffer.cruise_departure_port}
           </div>
         )}
-        {offer.cruise_cabin_type && (
+        {cruiseOffer.cruise_cabin_type && (
           <div className="flex items-center gap-2">
-            <Users size={16} className="text-blue-500" /> {offer.cruise_cabin_type}
+            <Users size={16} className="text-blue-500" /> {cruiseOffer.cruise_cabin_type}
           </div>
         )}
         {offer.rating > 0 && (
@@ -108,18 +121,18 @@ const CruiseOfferCard: React.FC<CruiseOfferCardProps> = ({ offer }) => {
       </div>
 
       {/* Ports of Call */}
-      {offer.cruise_ports && offer.cruise_ports.length > 0 && (
+      {cruiseOffer.cruise_ports && cruiseOffer.cruise_ports.length > 0 && (
         <div className="mb-4">
           <h4 className="text-sm font-bold text-gray-700 mb-2">Ports of Call:</h4>
           <div className="flex flex-wrap gap-2">
-            {offer.cruise_ports.slice(0, 5).map((port, i) => (
+            {cruiseOffer.cruise_ports.slice(0, 5).map((port, i) => (
               <span key={i} className="bg-blue-50 text-blue-700 text-xs px-3 py-1.5 rounded-full border border-blue-200">
                 {port}
               </span>
             ))}
-            {offer.cruise_ports.length > 5 && (
+            {cruiseOffer.cruise_ports.length > 5 && (
               <span className="text-xs text-gray-500 px-2 py-1.5">
-                +{offer.cruise_ports.length - 5} more
+                +{cruiseOffer.cruise_ports.length - 5} more
               </span>
             )}
           </div>
@@ -127,9 +140,9 @@ const CruiseOfferCard: React.FC<CruiseOfferCardProps> = ({ offer }) => {
       )}
 
       {/* Itinerary Preview */}
-      {offer.cruise_itinerary && (
+      {cruiseOffer.cruise_itinerary && (
         <div className="mb-4">
-          <p className="text-sm text-gray-600 line-clamp-2">{offer.cruise_itinerary}</p>
+          <p className="text-sm text-gray-600 line-clamp-2">{cruiseOffer.cruise_itinerary}</p>
         </div>
       )}
 

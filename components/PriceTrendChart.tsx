@@ -58,7 +58,7 @@ const PriceTrendChart: React.FC<PriceTrendChartProps> = ({
                   padding: '8px 12px',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)'
               }}
-              formatter={(value: number) => [<span className="text-orange-600 font-bold">{currencySymbol}{value}</span>, 'Av. Price']}
+              formatter={(value: number | undefined) => [<span className="text-orange-600 font-bold">{currencySymbol}{value ?? 0}</span>, 'Av. Price']}
               labelStyle={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px' }}
               cursor={{ stroke: '#fdba74', strokeWidth: 1, strokeDasharray: '4 4' }}
             />

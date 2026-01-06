@@ -31,18 +31,19 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // Store conversion
-    const { error } = await supabase
-      .from('affiliate_conversions')
-      .insert({
-        conversion_id,
-        click_id,
-        amount: Number(amount),
-        currency,
-        provider,
-        vertical,
-        booking_reference,
-        metadata: metadata || {},
-      });
+    const conversionData: any = {
+      conversion_id,
+      click_id,
+      amount: Number(amount),
+      currency,
+      provider,
+      vertical,
+      booking_reference,
+      metadata: metadata || {},
+    };
+    const { error } = await (supabase
+      .from('affiliate_conversions') as any)
+      .insert(conversionData);
 
     if (error) {
       console.error('Error storing conversion:', error);

@@ -466,12 +466,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   <input
                     type="number"
                     min="1"
-                    value={localFilters.cruiseDuration?.min || ''}
+                    value={localFilters.cruiseDurationMin || ''}
                     onChange={(e) => updateFilter({ 
-                      cruiseDuration: { 
-                        ...localFilters.cruiseDuration, 
-                        min: e.target.value ? Number(e.target.value) : undefined 
-                      } 
+                      cruiseDurationMin: e.target.value ? Number(e.target.value) : undefined 
                     })}
                     placeholder="1"
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
@@ -482,12 +479,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   <input
                     type="number"
                     min="1"
-                    value={localFilters.cruiseDuration?.max || ''}
+                    value={localFilters.cruiseDurationMax || ''}
                     onChange={(e) => updateFilter({ 
-                      cruiseDuration: { 
-                        ...localFilters.cruiseDuration, 
-                        max: e.target.value ? Number(e.target.value) : undefined 
-                      } 
+                      cruiseDurationMax: e.target.value ? Number(e.target.value) : undefined 
                     })}
                     placeholder="14"
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"

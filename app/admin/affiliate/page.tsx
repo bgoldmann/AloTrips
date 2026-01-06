@@ -263,7 +263,12 @@ export default function AffiliateDashboard() {
               <AreaChart data={revenueHistory}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="date" stroke="#666" fontSize={12} />
-                <YAxis yAxisId="left" stroke="#666" fontSize={12} />
+                <YAxis 
+                  yAxisId="left" 
+                  stroke="#666" 
+                  fontSize={12}
+                  tickFormatter={(value: number | undefined) => `$${(value || 0).toLocaleString()}`}
+                />
                 <YAxis yAxisId="right" orientation="right" stroke="#666" fontSize={12} />
                 <Tooltip 
                   contentStyle={{ 
@@ -305,7 +310,7 @@ export default function AffiliateDashboard() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"

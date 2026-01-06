@@ -4,13 +4,14 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import FAQ, { FAQItem } from '@/components/FAQ';
 
 interface StaysCityPageProps {
-  params: {
+  params: Promise<{
     city: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: StaysCityPageProps): Promise<Metadata> {
-  const cityName = decodeURIComponent(params.city).replace(/-/g, ' ');
+  const { city: cityParam } = await params;
+  const cityName = decodeURIComponent(cityParam).replace(/-/g, ' ');
   const capitalizedCity = cityName.split(' ').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
@@ -33,8 +34,9 @@ const cityFAQs: FAQItem[] = [
   },
 ];
 
-export default function StaysCityPage({ params }: StaysCityPageProps) {
-  const cityName = decodeURIComponent(params.city).replace(/-/g, ' ');
+export default async function StaysCityPage({ params }: StaysCityPageProps) {
+  const { city: cityParam } = await params;
+  const cityName = decodeURIComponent(cityParam).replace(/-/g, ' ');
   const capitalizedCity = cityName.split(' ').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');

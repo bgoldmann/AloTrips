@@ -4,10 +4,10 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import { Offer } from '@/types';
 
 interface PropertyDetailPageProps {
-  params: {
+  params: Promise<{
     city: string;
     id: string;
-  };
+  }>;
 }
 
 // In production, this would fetch from database or API
@@ -17,7 +17,8 @@ async function getProperty(id: string): Promise<Offer | null> {
 }
 
 export async function generateMetadata({ params }: PropertyDetailPageProps): Promise<Metadata> {
-  const property = await getProperty(params.id);
+  const { id } = await params;
+  const property = await getProperty(id);
   
   if (!property) {
     return {
@@ -32,8 +33,9 @@ export async function generateMetadata({ params }: PropertyDetailPageProps): Pro
 }
 
 export default async function PropertyDetailPage({ params }: PropertyDetailPageProps) {
-  const property = await getProperty(params.id);
-  const cityName = decodeURIComponent(params.city).replace(/-/g, ' ');
+  const { id, city: cityParam } = await params;
+  const property = await getProperty(id);
+  const cityName = decodeURIComponent(cityParam).replace(/-/g, ' ');
   const capitalizedCity = cityName.split(' ').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
@@ -47,7 +49,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
       <div className="max-w-7xl mx-auto px-4 py-12">
         <Breadcrumbs items={[
           { label: 'Stays', href: '/stays' },
-          { label: capitalizedCity, href: `/stays/${params.city}` },
+          { label: capitalizedCity, href: `/stays/${cityParam}` },
           { label: property.title },
         ]} />
         

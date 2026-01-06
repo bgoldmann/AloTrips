@@ -80,12 +80,13 @@ export async function PUT(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+    const updateData = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await (supabase
+      .from('users') as any)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

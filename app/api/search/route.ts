@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { processOffers } from '@/services/searchService';
-import { Vertical, SearchParams, Offer } from '@/types';
+import { Vertical, SearchParams, Offer, ProviderType } from '@/types';
 import { initializeProviders, getProviderConfigsFromEnv, getAggregator } from '@/lib/providers';
 import { generatePackages, PackageOffer } from '@/lib/packages/bundler';
 import { PackageSearchApiResponse, SearchApiResponse } from '@/types/api';
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     };
     
     // Sanitize input to prevent XSS attacks
-    const searchParamsObj = sanitizeSearchParams(rawSearchParams);
+    const searchParamsObj: SearchParams = sanitizeSearchParams(rawSearchParams) as SearchParams;
 
     ensureProvidersInitialized();
     const aggregator = getAggregator();
@@ -158,10 +158,10 @@ export async function GET(request: NextRequest) {
 
     if (!dbError && dbOffers && dbOffers.length > 0) {
       // Transform database offers to Offer format
-      const transformedDbOffers = dbOffers.map((dbOffer: DatabaseOfferRow) => ({
+      const transformedDbOffers: Offer[] = dbOffers.map((dbOffer: DatabaseOfferRow): Offer => ({
         id: dbOffer.id,
-        provider: dbOffer.provider,
-        vertical: dbOffer.vertical,
+        provider: dbOffer.provider as ProviderType,
+        vertical: dbOffer.vertical as Vertical,
         title: dbOffer.title,
         subtitle: dbOffer.subtitle,
         base_price: Number(dbOffer.base_price),
@@ -170,28 +170,30 @@ export async function GET(request: NextRequest) {
         currency: dbOffer.currency,
         rating: Number(dbOffer.rating),
         reviewCount: dbOffer.review_count,
-        image: dbOffer.image,
-        stops: dbOffer.stops,
-        duration: dbOffer.duration,
-        layover_minutes: dbOffer.layover_minutes,
-        baggage_included: dbOffer.baggage_included,
-        carryon_included: dbOffer.carryon_included,
-        flight_number: dbOffer.flight_number,
-        departure_time: dbOffer.departure_time,
-        arrival_time: dbOffer.arrival_time,
-        stars: dbOffer.stars,
-        amenities: dbOffer.amenities,
-        car_type: dbOffer.car_type,
-        transmission: dbOffer.transmission,
-        passengers: dbOffer.passengers,
-        mileage_limit: dbOffer.mileage_limit,
-        refundable: dbOffer.refundable,
+        image: dbOffer.image || '',
+        stops: dbOffer.stops ?? undefined,
+        duration: dbOffer.duration ?? undefined,
+        layover_minutes: dbOffer.layover_minutes ?? undefined,
+        baggage_included: dbOffer.baggage_included ?? undefined,
+        carryon_included: dbOffer.carryon_included ?? undefined,
+        flight_number: dbOffer.flight_number ?? undefined,
+        departure_time: dbOffer.departure_time ?? undefined,
+        arrival_time: dbOffer.arrival_time ?? undefined,
+        stars: dbOffer.stars ?? undefined,
+        amenities: dbOffer.amenities ?? undefined,
+        car_type: dbOffer.car_type ?? undefined,
+        transmission: dbOffer.transmission ?? undefined,
+        passengers: dbOffer.passengers ?? undefined,
+        mileage_limit: dbOffer.mileage_limit ?? undefined,
+        refundable: dbOffer.refundable ?? false,
         epc: Number(dbOffer.epc),
+        isCheapest: false,
+        isBestValue: false,
       }));
 
       // Merge provider offers with database offers (avoid duplicates by ID)
       const existingIds = new Set(allOffers.map(o => o.id));
-      const uniqueDbOffers = transformedDbOffers.filter((o: Offer) => !existingIds.has(o.id));
+      const uniqueDbOffers: Offer[] = transformedDbOffers.filter((o) => !existingIds.has(o.id));
       allOffers.push(...uniqueDbOffers);
     }
 
@@ -207,10 +209,7 @@ export async function GET(request: NextRequest) {
     // (This is optional - you can skip this if you prefer to always fetch fresh)
     if (processedOffers.length > 0) {
       // Save to database for future reference (async, don't wait)
-      supabase
-        .from('offers')
-        .upsert(
-          processedOffers.map(offer => ({
+      const upsertData = processedOffers.map(offer => ({
             id: offer.id,
             provider: offer.provider,
             vertical: offer.vertical,
@@ -241,9 +240,10 @@ export async function GET(request: NextRequest) {
             epc: offer.epc,
             is_cheapest: offer.isCheapest || false,
             is_best_value: offer.isBestValue || false,
-          })),
-          { onConflict: 'id' }
-        )
+          }));
+      (supabase
+        .from('offers') as any)
+        .upsert(upsertData, { onConflict: 'id' })
         .then(() => {
           // Silently handle errors
         })

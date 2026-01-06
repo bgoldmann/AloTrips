@@ -1,12 +1,12 @@
 import {
   createFlightHotelPackage,
 } from '@/lib/packages';
-import { Offer } from '@/types';
+import { Offer, ProviderType } from '@/types';
 
 describe('Package Bundler', () => {
   const mockFlight: Offer = {
     id: 'flight-1',
-    provider: 'EXPEDIA',
+    provider: ProviderType.EXPEDIA,
     vertical: 'flights',
     title: 'Flight',
     subtitle: 'Airline',
@@ -23,7 +23,7 @@ describe('Package Bundler', () => {
 
   const mockHotel: Offer = {
     id: 'hotel-1',
-    provider: 'BOOKING',
+    provider: ProviderType.BOOKING,
     vertical: 'stays',
     title: 'Hotel',
     subtitle: 'Luxury Hotel',
@@ -46,6 +46,7 @@ describe('Package Bundler', () => {
         destination: 'Paris',
         startDate: '2024-06-01',
         endDate: '2024-06-05',
+        travelers: 2,
       };
       
       const packageOffer = createFlightHotelPackage(
@@ -67,6 +68,7 @@ describe('Package Bundler', () => {
         destination: 'Paris',
         startDate: '2024-06-01',
         endDate: '2024-06-05',
+        travelers: 2,
       };
       
       expect(() => {
@@ -79,6 +81,7 @@ describe('Package Bundler', () => {
         destination: 'Paris',
         startDate: '2024-06-01',
         endDate: '2024-06-05',
+        travelers: 2,
       };
       
       expect(() => {

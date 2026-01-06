@@ -3,13 +3,14 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import FAQ, { FAQItem } from '@/components/FAQ';
 
 interface FlightsRoutePageProps {
-  params: {
+  params: Promise<{
     route: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: FlightsRoutePageProps): Promise<Metadata> {
-  const route = decodeURIComponent(params.route);
+  const { route: routeParam } = await params;
+  const route = decodeURIComponent(routeParam);
   const [origin, destination] = route.includes('-to-') 
     ? route.split('-to-').map(city => city.replace(/-/g, ' ').split(' ').map(word => 
         word.charAt(0).toUpperCase() + word.slice(1)
@@ -40,8 +41,9 @@ const routeFAQs: FAQItem[] = [
   },
 ];
 
-export default function FlightsRoutePage({ params }: FlightsRoutePageProps) {
-  const route = decodeURIComponent(params.route);
+export default async function FlightsRoutePage({ params }: FlightsRoutePageProps) {
+  const { route: routeParam } = await params;
+  const route = decodeURIComponent(routeParam);
   const [origin, destination] = route.includes('-to-') 
     ? route.split('-to-').map(city => city.replace(/-/g, ' ').split(' ').map(word => 
         word.charAt(0).toUpperCase() + word.slice(1)
@@ -55,9 +57,9 @@ export default function FlightsRoutePage({ params }: FlightsRoutePageProps) {
   ];
 
   if (origin) {
-    breadcrumbItems.push({ label: `${origin} to ${destination}` });
+    breadcrumbItems.push({ label: `${origin} to ${destination}`, href: `/flights/${routeParam}` });
   } else {
-    breadcrumbItems.push({ label: `Flights to ${destination}` });
+    breadcrumbItems.push({ label: `Flights to ${destination}`, href: `/flights/${routeParam}` });
   }
 
   return (

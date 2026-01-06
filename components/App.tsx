@@ -25,6 +25,7 @@ import MapView from './MapView';
 import PackageOfferCard from './PackageOfferCard';
 import ActivityOfferCard from './ActivityOfferCard';
 import CruiseOfferCard from './CruiseOfferCard';
+import ProviderDownNotice from './ProviderDownNotice';
 import { filterAndSortOffers } from '@/lib/filters';
 import { FilterState, SortOption } from '@/types';
 import { getUpsellRecommendation, TripContext } from '@/lib/upsells/rules';
@@ -80,6 +81,7 @@ const App: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortOption>('recommended');
   const [showFilters, setShowFilters] = useState(false);
   const [rawResults, setRawResults] = useState<Offer[]>([]); // Store unfiltered results
+  const [packageResults, setPackageResults] = useState<PackageOffer[]>([]); // Store package offers
   
   // Upsell recommendation
   const [upsellRecommendation, setUpsellRecommendation] = useState<ReturnType<typeof getUpsellRecommendation>>(null);
@@ -632,7 +634,7 @@ const App: React.FC = () => {
                    {activeVertical === 'flights' && (
                      <PriceTrendChart 
                        destination={destination}
-                       currency={currency}
+                       currency={currency === 'USD' || currency === 'EUR' ? currency : 'USD'}
                      />
                    )}
 
@@ -663,21 +665,15 @@ const App: React.FC = () => {
                                {activeVertical === 'things-to-do' ? (
                                  <ActivityOfferCard 
                                    offer={offer}
-                                   targetCurrency={currency}
-                                   exchangeRate={exchangeRate}
                                  />
                                ) : activeVertical === 'cruises' ? (
                                  <CruiseOfferCard
                                    offer={offer}
-                                   targetCurrency={currency}
-                                   exchangeRate={exchangeRate}
                                  />
                                ) : (
                                  <OfferCard 
                                    offer={offer}
                                    vertical={activeVertical}
-                                   targetCurrency={currency}
-                                   exchangeRate={exchangeRate} 
                                  />
                                )}
                              </div>

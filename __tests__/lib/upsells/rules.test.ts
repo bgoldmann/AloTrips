@@ -1,11 +1,11 @@
 import { getUpsellRecommendation, TripContext } from '@/lib/upsells';
-import { Offer } from '@/types';
+import { Offer, ProviderType } from '@/types';
 
 describe('Upsell Rules', () => {
   const mockOffers: Offer[] = [
     {
       id: '1',
-      provider: 'EXPEDIA',
+      provider: ProviderType.EXPEDIA,
       vertical: 'flights',
       title: 'Flight A',
       subtitle: 'Airline',
@@ -30,6 +30,7 @@ describe('Upsell Rules', () => {
           origin: 'New York',
           startDate: '2024-06-01',
           endDate: '2024-06-10',
+          travelers: 2,
         },
         offers: mockOffers,
         destination: 'Paris',
@@ -56,6 +57,7 @@ describe('Upsell Rules', () => {
           destination: 'Tokyo',
           startDate: '2024-06-01',
           endDate: '2024-06-15',
+          travelers: 2,
         },
         offers: expensiveOffers,
         destination: 'Tokyo',
@@ -74,6 +76,7 @@ describe('Upsell Rules', () => {
           origin: 'New York',
           startDate: '2024-06-01',
           endDate: '2024-06-05',
+          travelers: 2,
         },
         offers: mockOffers,
         destination: 'Los Angeles',
@@ -90,8 +93,10 @@ describe('Upsell Rules', () => {
       const context: TripContext = {
         vertical: 'stays',
         searchParams: {
+          destination: 'Unknown',
           startDate: '2024-06-01',
           endDate: '2024-06-05',
+          travelers: 2,
         },
         offers: mockOffers,
       };

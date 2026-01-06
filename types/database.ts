@@ -3,7 +3,7 @@
  * These represent the structure of rows returned from Supabase
  */
 
-import { ProviderType, Vertical } from './index';
+import { ProviderType, Vertical } from '../types';
 
 export interface DatabaseOfferRow {
   id: string;

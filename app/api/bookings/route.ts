@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to match Booking type
-    const transformedBookings = bookings?.map((booking) => ({
+    const transformedBookings = bookings?.map((booking: any) => ({
       id: booking.id,
       date: booking.date,
       itemTitle: booking.item_title,

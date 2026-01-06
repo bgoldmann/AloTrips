@@ -352,6 +352,31 @@ All notable changes to this project will be documented in this file.
       - Different durations and cabin types
     - Integrated `CruiseOfferCard` in `App.tsx` for cruises vertical
     - Updated `ExpediaAdapter` to support cruises vertical
+  - **TypeScript Error Fixes** - Fixed all remaining TypeScript compilation errors:
+    - Fixed Supabase update/insert type issues using type assertions
+    - Fixed SearchParams type compatibility in search route
+    - Fixed Offer type mapping from database rows (null to undefined conversion)
+    - Fixed provider and vertical type assertions
+    - Fixed image field null handling
+    - Fixed upsert type issues with explicit type casting
+  - **Deep Review & Bug Fixes** - Comprehensive codebase review and fixes:
+    - **Build Configuration**:
+      - Fixed Tailwind CSS v4 PostCSS configuration (installed `@tailwindcss/postcss`)
+      - Updated `postcss.config.js` to use new plugin format
+    - **Next.js 15 Compatibility**:
+      - Updated dynamic route pages to use async params (`Promise<{...}>`)
+      - Fixed `app/stays/[city]/page.tsx`, `app/flights/[route]/page.tsx`, `app/stays/[city]/[id]/page.tsx`
+    - **TypeScript Errors**:
+      - Fixed test files to use `ProviderType` enum instead of string literals
+      - Added missing `travelers` property to test `SearchParams` objects
+      - Fixed `sortOffers` function call (removed extra argument)
+      - Added type assertions for Supabase query results in admin API
+      - Fixed optional property access in affiliate page (`percent` null check)
+    - **Missing Imports**:
+      - Added `ProviderDownNotice` import to `App.tsx`
+    - **Type Safety**:
+      - Added proper type guards for database query results
+      - Fixed type inference issues in affiliate stats API
   - **Improvements & Refinements** - Code quality and user experience enhancements:
     - **Accessibility Improvements**:
       - Added `aria-label` attributes to interactive buttons

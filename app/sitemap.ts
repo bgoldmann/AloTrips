@@ -42,7 +42,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${baseUrl}/cars`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
+        changeFrequency: 'weekly' as const,
       priority: 0.8,
     },
     {
@@ -54,27 +54,27 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${baseUrl}/cruises`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
+        changeFrequency: 'weekly' as const,
       priority: 0.7,
     },
     {
       url: `${baseUrl}/things-to-do`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
+        changeFrequency: 'weekly' as const,
       priority: 0.7,
     },
     // Destination pages
     ...POPULAR_CITIES.map(city => ({
       url: `${baseUrl}/stays/${city}`,
       lastModified: new Date(),
-      changeFrequency: 'daily',
+      changeFrequency: 'daily' as const,
       priority: 0.8,
     })),
     // Flight route pages
     ...POPULAR_ROUTES.map(route => ({
       url: `${baseUrl}/flights/${route}`,
       lastModified: new Date(),
-      changeFrequency: 'daily',
+      changeFrequency: 'daily' as const,
       priority: 0.8,
     })),
   ];

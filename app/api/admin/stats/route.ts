@@ -18,7 +18,7 @@ export async function GET() {
       .eq('status', 'Confirmed');
 
     const totalRevenue = confirmedBookings?.reduce(
-      (sum, booking) => sum + Number(booking.amount),
+      (sum, booking: any) => sum + Number(booking?.amount || 0),
       0
     ) || 0;
 

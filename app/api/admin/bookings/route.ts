@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to match Booking type
-    const transformedBookings = bookings?.map((booking) => ({
+    const transformedBookings = bookings?.map((booking: any) => ({
       id: booking.id,
       date: booking.date,
       itemTitle: booking.item_title,
@@ -100,12 +100,13 @@ export async function PUT(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-      .from('bookings')
-      .update({
-        status,
-        updated_at: new Date().toISOString(),
-      })
+    const updateData = {
+      status,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await (supabase
+      .from('bookings') as any)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

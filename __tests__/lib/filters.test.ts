@@ -1,11 +1,11 @@
 import { applyFilters, sortOffers } from '@/lib/filters';
-import { Offer, FilterState, SortOption } from '@/types';
+import { Offer, FilterState, SortOption, ProviderType } from '@/types';
 
 describe('Filters and Sorting', () => {
   const mockOffers: Offer[] = [
     {
       id: '1',
-      provider: 'EXPEDIA',
+      provider: ProviderType.EXPEDIA,
       vertical: 'stays',
       title: 'Hotel A',
       subtitle: 'Luxury Hotel',
@@ -22,7 +22,7 @@ describe('Filters and Sorting', () => {
     },
     {
       id: '2',
-      provider: 'BOOKING',
+      provider: ProviderType.BOOKING,
       vertical: 'stays',
       title: 'Hotel B',
       subtitle: 'Budget Hotel',
@@ -39,7 +39,7 @@ describe('Filters and Sorting', () => {
     },
     {
       id: '3',
-      provider: 'AGODA',
+      provider: ProviderType.AGODA,
       vertical: 'stays',
       title: 'Hotel C',
       subtitle: 'Mid-range Hotel',
@@ -138,7 +138,7 @@ describe('Filters and Sorting', () => {
     });
 
     it('should maintain original order for recommended', () => {
-      const result = sortOffers(mockOffers, 'recommended', 'stays');
+      const result = sortOffers(mockOffers, 'recommended');
       expect(result).toHaveLength(3);
       // Recommended should maintain original order (or use isBestValue/isCheapest)
     });

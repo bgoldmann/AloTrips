@@ -145,18 +145,18 @@ export function normalizeOffer(
       }
 
       if (vertical === 'cruises') {
-        offer.cruise_line = raw.cruise_line ?? raw.cruiseLine ?? raw.line;
-        offer.cruise_region = raw.cruise_region ?? raw.region ?? raw.destination_region;
-        offer.cruise_duration = raw.cruise_duration ?? raw.duration_nights ?? raw.nights;
-        offer.cruise_ports = Array.isArray(raw.cruise_ports)
+        (offer as any).cruise_line = raw.cruise_line ?? raw.cruiseLine ?? raw.line;
+        (offer as any).cruise_region = raw.cruise_region ?? raw.region ?? raw.destination_region;
+        (offer as any).cruise_duration = raw.cruise_duration ?? raw.duration_nights ?? raw.nights;
+        (offer as any).cruise_ports = Array.isArray(raw.cruise_ports)
           ? raw.cruise_ports
           : (raw.ports ?? raw.ports_of_call ?? []);
-        offer.cruise_ship = raw.cruise_ship ?? raw.ship_name ?? raw.ship;
-        offer.cruise_departure_port = raw.cruise_departure_port ?? raw.departure_port ?? raw.departurePort;
-        offer.cruise_itinerary = raw.cruise_itinerary ?? raw.itinerary ?? raw.description;
-        offer.cruise_cabin_type = raw.cruise_cabin_type ?? raw.cabin_type ?? raw.cabinType;
+        (offer as any).cruise_ship = raw.cruise_ship ?? raw.ship_name ?? raw.ship;
+        (offer as any).cruise_departure_port = raw.cruise_departure_port ?? raw.departure_port ?? raw.departurePort;
+        (offer as any).cruise_itinerary = raw.cruise_itinerary ?? raw.itinerary ?? raw.description;
+        (offer as any).cruise_cabin_type = raw.cruise_cabin_type ?? raw.cabin_type ?? raw.cabinType;
         // For cruises, subtitle could be the cruise line or ship
-        offer.subtitle = offer.cruise_line || offer.cruise_ship || offer.subtitle;
+        offer.subtitle = (offer as any).cruise_line || (offer as any).cruise_ship || offer.subtitle;
       }
 
       return offer;

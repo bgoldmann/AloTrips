@@ -111,6 +111,18 @@ export interface FilterState {
   suppliers?: string[];
   transmission?: string[];
   unlimitedMileage?: boolean;
+  
+  // Activities
+  activityCategory?: string[];
+  activityDuration?: string[];
+  
+  // Cruises
+  cruiseLines?: string[];
+  cruiseRegions?: string[];
+  cruiseDurationMin?: number;
+  cruiseDurationMax?: number;
+  cruiseCabinType?: string[];
+  cruiseDeparturePort?: string[];
 }
 
 export interface SortState {
@@ -120,10 +132,10 @@ export interface SortState {
 // User & Admin Types
 
 // Re-export API types
-export type { SearchApiResponse, PackageSearchApiResponse, SearchResponse } from './api';
+export type { SearchApiResponse, PackageSearchApiResponse, SearchResponse } from './types/api';
 
 // Re-export database types
-export type { DatabaseOfferRow } from './database';
+export type { DatabaseOfferRow } from './types/database';
 
 export interface UserProfile {
   id: string;

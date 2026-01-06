@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { FEATURED_DEALS, STAY_STYLE_DEALS, BUNDLE_DEALS } from '../constants';
 import { Timer, ArrowRight, Tag, ChevronDown, ChevronUp, Check } from 'lucide-react';
 

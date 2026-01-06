@@ -203,47 +203,52 @@ export function applyFilters(offers: Offer[], filters: FilterState, vertical: Ve
   if (vertical === 'cruises') {
     // Cruise Lines
     if (filters.cruiseLines && filters.cruiseLines.length > 0) {
-      filtered = filtered.filter(offer =>
-        offer.cruise_line && filters.cruiseLines!.some(line =>
-          offer.cruise_line!.toLowerCase().includes(line.toLowerCase())
-        )
-      );
+      filtered = filtered.filter(offer => {
+        const cruiseOffer = offer as any;
+        return cruiseOffer.cruise_line && filters.cruiseLines!.some(line =>
+          cruiseOffer.cruise_line.toLowerCase().includes(line.toLowerCase())
+        );
+      });
     }
 
     // Cruise Regions
     if (filters.cruiseRegions && filters.cruiseRegions.length > 0) {
-      filtered = filtered.filter(offer =>
-        offer.cruise_region && filters.cruiseRegions!.some(region =>
-          offer.cruise_region!.toLowerCase().includes(region.toLowerCase())
-        )
-      );
+      filtered = filtered.filter(offer => {
+        const cruiseOffer = offer as any;
+        return cruiseOffer.cruise_region && filters.cruiseRegions!.some(region =>
+          cruiseOffer.cruise_region.toLowerCase().includes(region.toLowerCase())
+        );
+      });
     }
 
     // Cruise Duration (nights)
-    if (filters.cruiseDuration) {
+    if (filters.cruiseDurationMin !== undefined || filters.cruiseDurationMax !== undefined) {
       filtered = filtered.filter(offer => {
-        if (!offer.cruise_duration) return true;
-        const nights = offer.cruise_duration;
-        if (filters.cruiseDuration!.min !== undefined && nights < filters.cruiseDuration!.min) return false;
-        if (filters.cruiseDuration!.max !== undefined && nights > filters.cruiseDuration!.max) return false;
+        const cruiseOffer = offer as any;
+        if (!cruiseOffer.cruise_duration) return true;
+        const nights = cruiseOffer.cruise_duration;
+        if (filters.cruiseDurationMin !== undefined && nights < filters.cruiseDurationMin) return false;
+        if (filters.cruiseDurationMax !== undefined && nights > filters.cruiseDurationMax) return false;
         return true;
       });
     }
 
     // Cabin Type
     if (filters.cruiseCabinType && filters.cruiseCabinType.length > 0) {
-      filtered = filtered.filter(offer =>
-        offer.cruise_cabin_type && filters.cruiseCabinType!.includes(offer.cruise_cabin_type)
-      );
+      filtered = filtered.filter(offer => {
+        const cruiseOffer = offer as any;
+        return cruiseOffer.cruise_cabin_type && filters.cruiseCabinType!.includes(cruiseOffer.cruise_cabin_type);
+      });
     }
 
     // Departure Port
     if (filters.cruiseDeparturePort && filters.cruiseDeparturePort.length > 0) {
-      filtered = filtered.filter(offer =>
-        offer.cruise_departure_port && filters.cruiseDeparturePort!.some(port =>
-          offer.cruise_departure_port!.toLowerCase().includes(port.toLowerCase())
-        )
-      );
+      filtered = filtered.filter(offer => {
+        const cruiseOffer = offer as any;
+        return cruiseOffer.cruise_departure_port && filters.cruiseDeparturePort!.some(port =>
+          cruiseOffer.cruise_departure_port.toLowerCase().includes(port.toLowerCase())
+        );
+      });
     }
 
     // Min rating

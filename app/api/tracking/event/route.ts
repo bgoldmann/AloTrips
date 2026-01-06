@@ -34,24 +34,26 @@ export async function POST(request: NextRequest) {
 
     // For click events, store in affiliate_clicks table
     if (name === 'click' && vertical && provider && placement) {
-      const { error } = await supabase
-        .from('affiliate_clicks')
-        .insert({
-          click_id,
-          session_id,
-          provider,
-          vertical,
-          placement,
-          utm_source: utm_source || 'alotrips',
-          utm_medium: utm_medium || 'affiliate',
-          utm_campaign: utm_campaign || vertical,
-          utm_content: utm_content || placement,
-          utm_term: route_or_destination,
-          at_user_type: user_type,
-          at_device: device,
-          route_or_destination,
-          metadata: metadata || {},
-        });
+      const clickData: any = {
+        click_id,
+        session_id,
+        provider,
+        vertical,
+        placement,
+        utm_source: utm_source || 'alotrips',
+        utm_medium: utm_medium || 'affiliate',
+        utm_campaign: utm_campaign || vertical,
+        utm_content: utm_content || placement,
+        utm_term: route_or_destination,
+        at_user_type: user_type,
+        at_device: device,
+        route_or_destination,
+        metadata: metadata || {},
+      };
+      
+      const { error } = await (supabase
+        .from('affiliate_clicks') as any)
+        .insert(clickData);
 
       if (error) {
         console.error('Error storing click:', error);
