@@ -8,6 +8,7 @@ import { PackageSearchApiResponse, SearchApiResponse } from '@/types/api';
 import { DatabaseOfferRow } from '@/types/database';
 import { logApiError } from '@/lib/errors/logger';
 import { sanitizeSearchParams } from '@/lib/utils/sanitize';
+import { getNearbyAirports } from '@/lib/nearby-airports';
 
 // Initialize providers on module load (lazy initialization would be better for serverless)
 let providersInitialized = false;
@@ -42,6 +43,9 @@ export async function GET(request: NextRequest) {
       children: searchParams.get('children') ? parseInt(searchParams.get('children')!, 10) : undefined,
       rooms: searchParams.get('rooms') ? parseInt(searchParams.get('rooms')!, 10) : undefined,
       tripType: searchParams.get('tripType') as SearchParams['tripType'] || undefined,
+      flexibleDays: searchParams.get('flexibleDays') ? parseInt(searchParams.get('flexibleDays')!, 10) : undefined,
+      flightSegments: searchParams.get('flightSegments') ? JSON.parse(searchParams.get('flightSegments')!) : undefined,
+      includeNearbyAirports: searchParams.get('includeNearbyAirports') === 'true',
     };
     
     // Sanitize input to prevent XSS attacks
@@ -104,9 +108,9 @@ export async function GET(request: NextRequest) {
       }
 
       // Process individual offers
-      const processedFlights = processOffers(flights, 'flights');
-      const processedHotels = processOffers(hotels, 'stays');
-      const processedCars = processOffers(cars, 'cars');
+      const processedFlights = await processOffers(flights, 'flights');
+      const processedHotels = await processOffers(hotels, 'stays');
+      const processedCars = await processOffers(cars, 'cars');
 
       // Generate packages
       const packages = generatePackages(
@@ -124,20 +128,99 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(response);
     }
 
-    // Try to fetch from providers first
-    try {
-      const providerResponses = await aggregator.search(vertical, searchParamsObj, {
-        timeout: 10000,
-        useCache: true,
-      });
-
-      // Aggregate offers from all providers
-      for (const response of providerResponses) {
-        if (response.data && response.data.length > 0) {
-          allOffers.push(...response.data);
+    // Handle multi-city flights specially
+    if (vertical === 'flights' && searchParamsObj.tripType === 'multi-city' && searchParamsObj.flightSegments && searchParamsObj.flightSegments.length > 0) {
+      // For multi-city, search each segment and combine results
+      const segmentOffers: Offer[][] = [];
+      
+      for (const segment of searchParamsObj.flightSegments) {
+        const segmentParams: SearchParams = {
+          ...searchParamsObj,
+          origin: segment.origin,
+          destination: segment.destination,
+          // Use segment date if available, otherwise use main dates
+          startDate: typeof segment.date === 'string' ? segment.date : (segment.date instanceof Date ? segment.date.toISOString().split('T')[0] : searchParamsObj.startDate),
+        };
+        
+        try {
+          const segmentResponses = await aggregator.search(vertical, segmentParams, {
+            timeout: 10000,
+            useCache: true,
+          });
+          
+          const segmentResults: Offer[] = [];
+          for (const response of segmentResponses) {
+            if (response.data && response.data.length > 0) {
+              segmentResults.push(...response.data);
+            }
+          }
+          segmentOffers.push(segmentResults);
+        } catch (error) {
+          console.error(`Error searching segment ${segment.origin} to ${segment.destination}:`, error);
+          segmentOffers.push([]);
         }
       }
-    } catch (providerError) {
+      
+      // Combine segments (for now, take top offers from each segment)
+      // In a full implementation, you'd create multi-city itineraries
+      if (segmentOffers.length > 0) {
+        // For simplicity, return offers from first segment
+        // A full implementation would create all possible combinations
+        allOffers.push(...segmentOffers[0]);
+      }
+    } else {
+      // Handle nearby airports for flights
+      let searchQueries: SearchParams[] = [searchParamsObj];
+      
+      if (vertical === 'flights' && searchParamsObj.includeNearbyAirports) {
+        const nearbyOriginAirports = searchParamsObj.origin 
+          ? getNearbyAirports(searchParamsObj.origin)
+          : [];
+        const nearbyDestAirports = searchParamsObj.destination
+          ? getNearbyAirports(searchParamsObj.destination)
+          : [];
+        
+        // Generate search queries for all combinations of nearby airports
+        if (nearbyOriginAirports.length > 1 || nearbyDestAirports.length > 1) {
+          searchQueries = [];
+          const origins = nearbyOriginAirports.length > 0 ? nearbyOriginAirports : [searchParamsObj.origin];
+          const destinations = nearbyDestAirports.length > 0 ? nearbyDestAirports : [searchParamsObj.destination];
+          
+          for (const orig of origins) {
+            for (const dest of destinations) {
+              searchQueries.push({
+                ...searchParamsObj,
+                origin: orig,
+                destination: dest,
+              });
+            }
+          }
+        }
+      }
+      
+      // Try to fetch from providers first
+      try {
+        // Search all query combinations
+        for (const query of searchQueries) {
+          const providerResponses = await aggregator.search(vertical, query, {
+            timeout: 10000,
+            useCache: true,
+          });
+
+          // Aggregate offers from all providers
+          for (const response of providerResponses) {
+            if (response.data && response.data.length > 0) {
+              // Tag offers with their origin/destination airports for display
+              const taggedOffers = response.data.map(offer => ({
+                ...offer,
+                searchOrigin: query.origin,
+                searchDestination: query.destination,
+              }));
+              allOffers.push(...taggedOffers);
+            }
+          }
+        }
+      } catch (providerError) {
       logApiError('/api/search', providerError instanceof Error ? providerError : new Error(String(providerError)), {
         vertical,
         searchParams: {
@@ -202,8 +285,82 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ offers: [] });
     }
 
+    // Get user tier for member pricing
+    let userTier: 'Silver' | 'Gold' | 'Platinum' | null = null;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('tier')
+          .eq('id', user.id)
+          .single();
+        if (userData?.tier) {
+          userTier = userData.tier as 'Silver' | 'Gold' | 'Platinum';
+        }
+      }
+    } catch (error) {
+      // Silently fail - user might not be logged in
+    }
+
+    // Apply member pricing if user tier qualifies
+    const tierHierarchy = { Silver: 1, Gold: 2, Platinum: 3 };
+    if (userTier) {
+      allOffers.forEach(offer => {
+        if (offer.member_price && offer.member_tier_required) {
+          const userTierLevel = tierHierarchy[userTier];
+          const requiredTierLevel = tierHierarchy[offer.member_tier_required];
+          if (userTierLevel >= requiredTierLevel) {
+            // User qualifies for member price - store original for display
+            const originalTotal = offer.total_price;
+            offer.total_price = offer.member_price;
+            // Store original price for display
+            (offer as any).original_price = originalTotal;
+            (offer as any).is_member_deal = true;
+          }
+        }
+      });
+    }
+
     // Process offers through the decision engine
-    const processedOffers = processOffers(allOffers, vertical);
+    const processedOffers = await processOffers(allOffers, vertical);
+
+    // Record price history for processed offers (async, don't wait)
+    if (processedOffers.length > 0) {
+      // Record price history in background (limit to top 10 to avoid too many writes)
+      Promise.all(
+        processedOffers.slice(0, 10).map(offer =>
+          fetch(`${request.nextUrl.origin}/api/price-history`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              offerId: offer.id,
+              provider: offer.provider,
+              vertical: offer.vertical,
+              origin: searchParamsObj.origin,
+              destination: searchParamsObj.destination,
+              startDate: searchParamsObj.startDate,
+              endDate: searchParamsObj.endDate,
+              travelers: searchParamsObj.travelers || 2,
+              basePrice: offer.base_price,
+              taxesFees: offer.taxes_fees,
+              totalPrice: offer.total_price,
+              currency: offer.currency,
+              offerMetadata: {
+                title: offer.title,
+                subtitle: offer.subtitle,
+                rating: offer.rating,
+                reviewCount: offer.reviewCount,
+              },
+            }),
+          }).catch(() => {
+            // Silently fail - price history is not critical
+          })
+        )
+      ).catch(() => {
+        // Silently fail
+      });
+    }
 
     // Optionally save new provider offers to database for caching
     // (This is optional - you can skip this if you prefer to always fetch fresh)

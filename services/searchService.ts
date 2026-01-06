@@ -1,7 +1,8 @@
 import { Offer, Vertical, TieSetConfig } from '../types';
-import { PROVIDER_TRUST_MULTIPLIER, TIE_SET_CONFIG, PRICE_PENALTIES } from '../constants';
+import { PROVIDER_TRUST_MULTIPLIER, TIE_SET_CONFIG, PRICE_PENALTIES, DEFAULT_EPC } from '../constants';
 import { ProviderType } from '../types';
 import { DatabaseOfferRow } from '../types/database';
+import { createClient } from '../lib/supabase/server';
 
 // PRD 12.3: Total Price Calculation
 const computeTotalPrice = (offer: Partial<Offer>): number => {
@@ -46,22 +47,62 @@ const getTieSet = (sortedOffers: Offer[], config: TieSetConfig): Offer[] => {
   return tieSet;
 };
 
-// PRD 12.5: Winner Selection (EPC + Trust)
-const chooseWinner = (tieSet: Offer[]): Offer | null => {
+/**
+ * Fetch learned EPC values from database (EPC Learning Loop integration)
+ * Falls back to default EPC if no learned values available
+ */
+async function getLearnedEPC(provider: ProviderType, vertical: Vertical): Promise<number> {
+  try {
+    const supabase = await createClient();
+    // Get most recent EPC learning data for this provider/vertical
+    const { data } = await supabase
+      .from('epc_learning')
+      .select('calculated_epc, confidence_score')
+      .eq('provider', provider)
+      .eq('vertical', vertical)
+      .order('period_end', { ascending: false })
+      .limit(1)
+      .single();
+
+    // Use learned EPC if confidence is high enough (>= 0.5) and value exists
+    if (data && data.calculated_epc && data.confidence_score >= 0.5) {
+      return Number(data.calculated_epc);
+    }
+  } catch (error) {
+    // Silently fall back to default EPC
+    console.debug(`No learned EPC for ${provider}/${vertical}, using default`);
+  }
+  
+  // Fall back to default EPC
+  return DEFAULT_EPC[vertical] || 0.15;
+}
+
+// PRD 12.5: Winner Selection (EPC + Trust) with EPC Learning integration
+const chooseWinner = async (tieSet: Offer[], vertical: Vertical): Promise<Offer | null> => {
   if (tieSet.length === 0) return null;
 
   let best: Offer | null = null;
   let bestScore = -Infinity;
 
-  for (const o of tieSet) {
+  // Fetch learned EPC values for all providers in tie set
+  const epcPromises = tieSet.map(async (o) => {
+    const learnedEPC = await getLearnedEPC(o.provider, vertical);
+    // Use learned EPC if available, otherwise use offer's EPC
+    const effectiveEPC = learnedEPC > 0 ? learnedEPC : o.epc;
     const trust = PROVIDER_TRUST_MULTIPLIER[o.provider] || 1.0;
-    const score = o.epc * trust;
-    
+    const score = effectiveEPC * trust;
+    return { offer: o, score };
+  });
+
+  const scores = await Promise.all(epcPromises);
+
+  for (const { offer, score } of scores) {
     if (score > bestScore) {
-      best = o;
+      best = offer;
       bestScore = score;
     }
   }
+
   return best;
 };
 
@@ -109,7 +150,7 @@ const transformDbOffer = (dbOffer: DatabaseOfferRow): Offer => {
   };
 };
 
-export const processOffers = (rawOffers: (Offer | DatabaseOfferRow)[], vertical: Vertical): Offer[] => {
+export const processOffers = async (rawOffers: (Offer | DatabaseOfferRow)[], vertical: Vertical): Promise<Offer[]> => {
   // 1. Transform database offers to Offer type
   const offers: Offer[] = rawOffers.map((offer): Offer => {
     // If already an Offer, return as-is
@@ -130,10 +171,10 @@ export const processOffers = (rawOffers: (Offer | DatabaseOfferRow)[], vertical:
 
   if (offers.length === 0) return [];
 
-  // 4. Logic Engine
+  // 4. Logic Engine with EPC Learning integration
   const cheapest = offers[0];
   const tieSet = getTieSet(offers, TIE_SET_CONFIG);
-  const winner = chooseWinner(tieSet);
+  const winner = await chooseWinner(tieSet, vertical);
   const recommended = winner ? applyGuardrails(winner, cheapest) : cheapest;
 
   // 5. Tagging

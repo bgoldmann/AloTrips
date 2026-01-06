@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import PropertyReviews from '@/components/PropertyReviews';
+import CrossVerticalLinks from '@/components/CrossVerticalLinks';
 import { Offer } from '@/types';
 
 interface PropertyDetailPageProps {
@@ -90,6 +92,17 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 </div>
               </div>
             )}
+
+            {/* Reviews */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Reviews</h2>
+              <PropertyReviews propertyId={id} />
+            </div>
+
+            {/* Cross-vertical Links */}
+            <div className="mb-6">
+              <CrossVerticalLinks destination={capitalizedCity} />
+            </div>
           </div>
 
           {/* Sidebar */}

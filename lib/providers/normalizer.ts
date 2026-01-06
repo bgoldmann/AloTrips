@@ -88,6 +88,10 @@ export function normalizeOffer(
   // Normalize EPC (earnings per click)
   const epc = raw.epc ?? raw.commission_rate ?? defaultEpc;
 
+  // Normalize member pricing
+  const memberPrice = raw.member_price ?? raw.memberPrice ?? undefined;
+  const memberTierRequired = raw.member_tier_required ?? raw.memberTierRequired ?? undefined;
+
   // Build the normalized offer
   const offer: Offer = {
     id,
@@ -104,6 +108,8 @@ export function normalizeOffer(
     image,
     refundable,
     epc: Math.max(0, Math.min(1, epc)), // Clamp between 0-1
+    member_price: memberPrice,
+    member_tier_required: memberTierRequired as 'Silver' | 'Gold' | 'Platinum' | undefined,
   };
 
   // Add vertical-specific fields

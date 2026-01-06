@@ -56,6 +56,10 @@ export interface Offer {
   refundable: boolean;
   epc: number; // Earnings Per Click (simulated)
   
+  // Member Pricing
+  member_price?: number; // Member-exclusive price (optional)
+  member_tier_required?: 'Silver' | 'Gold' | 'Platinum'; // Minimum tier required
+  
   // UI State
   isCheapest?: boolean;
   isBestValue?: boolean;
@@ -73,6 +77,15 @@ export interface SearchParams {
   children?: number;
   rooms?: number;
   tripType?: TripType;
+  flexibleDays?: number; // ±N days flexibility for calendar flexible dates
+  includeNearbyAirports?: boolean; // Include nearby airports in flight search
+  flightSegments?: FlightSegment[]; // For multi-city flights
+}
+
+export interface FlightSegment {
+  origin: string;
+  destination: string;
+  date: Date | string;
 }
 
 export interface TieSetConfig {

@@ -25,3 +25,8 @@ body {
   background: #94a3b8;
 }
 
+/* Dynamic progress bar width using CSS custom property */
+.progress-bar {
+  width: var(--progress-width, 0%);
+}
+

@@ -82,6 +82,8 @@ export class ExpediaAdapter implements ProviderAdapter {
           departure_time: '20:00',
           arrival_time: '08:00+1',
           epc: 0.35,
+          member_price: 320, // 10% discount for members
+          member_tier_required: 'Silver',
         },
       ];
     }
@@ -101,6 +103,8 @@ export class ExpediaAdapter implements ProviderAdapter {
           amenities: ['Wifi', 'City View', 'Gym'],
           refundable: true,
           epc: 0.50,
+          member_price: 142, // 10% discount for members
+          member_tier_required: 'Silver',
         },
         {
           id: 'exp-hotel-2',
@@ -115,6 +119,8 @@ export class ExpediaAdapter implements ProviderAdapter {
           amenities: ['Pool', 'Spa', 'Restaurant', 'Beach Access'],
           refundable: true,
           epc: 0.55,
+          member_price: 220, // 12% discount for Gold+ members
+          member_tier_required: 'Gold',
         },
       ];
     }

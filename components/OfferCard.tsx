@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Offer, Vertical } from '../types';
-import { Flame, Star, ShoppingBag, Clock, ShieldCheck, MapPin, Heart, Car, Users, Gauge, ArrowRight, Plane, Luggage } from 'lucide-react';
+import { Flame, Star, ShoppingBag, Clock, ShieldCheck, MapPin, Heart, Car, Users, Gauge, ArrowRight, Plane, Luggage, Bell } from 'lucide-react';
 import { useTracking } from '@/hooks/useTracking';
 import { getCurrencySymbol } from '@/lib/currency';
+import SocialShare from './SocialShare';
+import PriceAlertForm from './PriceAlertForm';
 
 interface OfferCardProps {
   offer: Offer;
@@ -14,8 +16,61 @@ interface OfferCardProps {
 
 const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showPriceAlertForm, setShowPriceAlertForm] = useState(false);
   const currencySymbol = getCurrencySymbol(offer.currency as any);
   const { trackRedirect } = useTracking();
+
+  // Check if offer is in wishlist on mount
+  useEffect(() => {
+    checkWishlistStatus();
+  }, [offer.id]);
+
+  const checkWishlistStatus = async () => {
+    try {
+      const response = await fetch(`/api/wishlist?offer_id=${offer.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setIsSaved(data.inWishlist || false);
+      }
+    } catch (error) {
+      // Silently fail - user might not be logged in
+    }
+  };
+
+  const handleSaveToWishlist = async () => {
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      if (isSaved) {
+        // Remove from wishlist
+        const response = await fetch(`/api/wishlist?offer_id=${offer.id}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          setIsSaved(false);
+        }
+      } else {
+        // Add to wishlist
+        const response = await fetch('/api/wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ offer, vertical }),
+        });
+        if (response.ok) {
+          setIsSaved(true);
+        } else if (response.status === 401) {
+          // User not logged in - could show login prompt
+          alert('Please log in to save offers to your wishlist');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update wishlist:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleViewDeal = () => {
     // Extract route/destination from offer title if available
@@ -40,8 +95,13 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
       
       {/* Badges */}
       <div className="absolute top-0 left-0 flex flex-col gap-0.5 z-30 pointer-events-none">
+        {offer.member_price && offer.member_tier_required && (
+          <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] uppercase font-black px-3 py-1.5 rounded-br-xl shadow-lg flex items-center gap-1.5 tracking-wide">
+            <Star size={12} className="fill-current" /> {offer.member_tier_required} EXCLUSIVE
+          </div>
+        )}
         {offer.isCheapest && (
-          <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] uppercase font-black px-3 py-1.5 rounded-br-xl shadow-lg flex items-center gap-1.5 tracking-wide">
+          <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] uppercase font-black px-3 py-1.5 rounded-br-xl shadow-lg flex items-center gap-1.5 tracking-wide mt-0.5">
             <Flame size={12} className="fill-current animate-pulse" /> CHEAPEST
           </div>
         )}
@@ -52,14 +112,18 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
         )}
       </div>
 
-      {/* Save Button */}
-      <button 
-        onClick={() => setIsSaved(!isSaved)}
-        className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-white/90 hover:bg-white text-gray-400 hover:text-red-500 transition-all shadow-sm backdrop-blur-md group-hover:scale-110 active:scale-90"
-        aria-label={isSaved ? "Remove from wishlist" : "Add to wishlist"}
-      >
-        <Heart size={20} className={isSaved ? "fill-red-500 text-red-500 transition-colors" : "transition-colors"} />
-      </button>
+      {/* Action Buttons */}
+      <div className="absolute top-4 right-4 z-30 flex gap-2">
+        <SocialShare offer={offer} vertical={vertical} />
+        <button 
+          onClick={handleSaveToWishlist}
+          disabled={isSaving}
+          className="p-2.5 rounded-lg bg-white/90 hover:bg-white text-gray-400 hover:text-red-500 transition-all shadow-sm backdrop-blur-md group-hover:scale-110 active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label={isSaved ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <Heart size={20} className={isSaved ? "fill-red-500 text-red-500 transition-colors" : "transition-colors"} />
+        </button>
+      </div>
 
       <div className="flex flex-col md:flex-row gap-5">
         {/* Image / Thumbnail */}
@@ -104,7 +168,12 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
                       <div className="flex items-center justify-between">
                          <div className="flex flex-col">
                             <span className="text-xl font-black text-gray-900 leading-none">{offer.departure_time || '10:00'}</span>
-                            <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">JFK • New York</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">
+                              {(offer as any).searchOrigin || 'JFK'} • {offer.subtitle || 'New York'}
+                              {(offer as any).searchOrigin && (offer as any).searchOrigin !== offer.title.split('→')[0]?.trim() && (
+                                <span className="ml-1 text-orange-600">(Nearby)</span>
+                              )}
+                            </span>
                          </div>
                          
                          <div className="flex-1 px-6 flex flex-col items-center">
@@ -121,7 +190,12 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
 
                          <div className="flex flex-col items-end">
                             <span className="text-xl font-black text-gray-900 leading-none">{offer.arrival_time || '17:00'}</span>
-                            <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">LHR • London</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">
+                              {(offer as any).searchDestination || 'LHR'} • {offer.subtitle || 'London'}
+                              {(offer as any).searchDestination && (offer as any).searchDestination !== offer.title.split('→')[1]?.trim() && (
+                                <span className="ml-1 text-orange-600">(Nearby)</span>
+                              )}
+                            </span>
                          </div>
                       </div>
 
@@ -221,7 +295,17 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
            <div className="text-right w-full md:w-auto flex justify-between md:block items-center">
               <span className="text-xs text-gray-400 block mb-1 font-medium">Total Price</span>
               <div>
-                  <span className="text-2xl font-black text-gray-900 tracking-tight">{currencySymbol}{Math.round(offer.total_price)}</span>
+                  {(offer as any).is_member_deal && (offer as any).original_price ? (
+                    <>
+                      <div className="flex items-center gap-2 justify-end md:justify-start">
+                        <span className="text-lg line-through text-gray-400">{currencySymbol}{Math.round((offer as any).original_price)}</span>
+                        <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide">Member</span>
+                      </div>
+                      <span className="text-2xl font-black text-gray-900 tracking-tight block">{currencySymbol}{Math.round(offer.total_price)}</span>
+                    </>
+                  ) : (
+                    <span className="text-2xl font-black text-gray-900 tracking-tight">{currencySymbol}{Math.round(offer.total_price)}</span>
+                  )}
                   <span className="text-[10px] text-gray-400 block mt-0.5">via {offer.provider}</span>
               </div>
            </div>
@@ -232,8 +316,29 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer, vertical }) => {
            >
              View Deal <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform"/>
            </button>
+           
+           <button 
+             onClick={() => setShowPriceAlertForm(true)}
+             className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+           >
+             <Bell size={16} /> Set Price Alert
+           </button>
         </div>
       </div>
+      
+      {showPriceAlertForm && (
+        <PriceAlertForm
+          vertical={vertical}
+          destination={offer.subtitle || offer.title}
+          origin={vertical === 'flights' ? offer.title.split('→')[0]?.trim() : undefined}
+          currentPrice={offer.total_price}
+          onClose={() => setShowPriceAlertForm(false)}
+          onSuccess={() => {
+            setShowPriceAlertForm(false);
+            // Could show a toast notification here
+          }}
+        />
+      )}
     </div>
   );
 };

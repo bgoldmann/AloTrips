@@ -26,6 +26,12 @@ import PackageOfferCard from './PackageOfferCard';
 import ActivityOfferCard from './ActivityOfferCard';
 import CruiseOfferCard from './CruiseOfferCard';
 import ProviderDownNotice from './ProviderDownNotice';
+import FlexibleDatePicker from './FlexibleDatePicker';
+import MultiCityFlightForm, { FlightSegment } from './MultiCityFlightForm';
+import SavedTripsPanel from './SavedTripsPanel';
+import WishlistPanel from './WishlistPanel';
+import CrossVerticalLinks from './CrossVerticalLinks';
+import PopularDestinations from './PopularDestinations';
 import { filterAndSortOffers } from '@/lib/filters';
 import { FilterState, SortOption } from '@/types';
 import { getUpsellRecommendation, TripContext } from '@/lib/upsells/rules';
@@ -33,7 +39,7 @@ import { PackageOffer } from '@/lib/packages/bundler';
 import { convertCurrencySync, getCurrencySymbol, Currency, getCachedRate, prefetchExchangeRates } from '@/lib/currency';
 import { 
   Plane, Bed, Car, Package, Anchor, Ticket, 
-  Search, MapPin, User, Menu, Globe, DollarSign, Euro, Sunset, LogOut, Settings, LayoutDashboard
+  Search, MapPin, User, Menu, Globe, DollarSign, Euro, Sunset, LogOut, Settings, LayoutDashboard, Heart, ArrowRight, Star
 } from 'lucide-react';
 
 type AppView = 'home' | 'profile' | 'admin';
@@ -66,6 +72,13 @@ const App: React.FC = () => {
     d.setDate(d.getDate() + 3);
     return d;
   });
+  const [flexibleDays, setFlexibleDays] = useState(0);
+  const [includeNearbyAirports, setIncludeNearbyAirports] = useState(false);
+  
+  // Multi-city flights state
+  const [flightSegments, setFlightSegments] = useState<FlightSegment[]>([
+    { origin: '', destination: '', date: new Date() },
+  ]);
 
   // Validation errors
   const [errors, setErrors] = useState<{
@@ -89,6 +102,9 @@ const App: React.FC = () => {
   // Map view state
   const [showMapView, setShowMapView] = useState(false);
   const [selectedOfferId, setSelectedOfferId] = useState<string | undefined>();
+  
+  // Wishlist view state
+  const [showWishlist, setShowWishlist] = useState(false);
 
   // Apply filters and sorting when they change (if results already exist)
   useEffect(() => {
@@ -203,6 +219,7 @@ const App: React.FC = () => {
         children: travelers.children,
         rooms: activeVertical === 'stays' ? travelers.rooms : undefined,
         tripType: activeVertical === 'flights' ? tripType : undefined,
+        includeNearbyAirports: activeVertical === 'flights' ? includeNearbyAirports : undefined,
       };
 
       // For packages, call API directly to get bundled results
@@ -314,7 +331,12 @@ const App: React.FC = () => {
 
              {/* Currency Selector */}
              <div className="relative group z-50">
-                <button className="flex items-center gap-1 hover:bg-orange-50 hover:text-orange-700 px-3 py-1.5 rounded-full transition-all">
+                <button 
+                    className="flex items-center gap-1 hover:bg-orange-50 hover:text-orange-700 px-3 py-1.5 rounded-full transition-all"
+                    aria-label="Currency selector"
+                    aria-expanded="false"
+                    aria-haspopup="true"
+                >
                     {currency === 'USD' ? <DollarSign size={16} /> : <Euro size={16} />} 
                     {currency}
                 </button>
@@ -340,7 +362,7 @@ const App: React.FC = () => {
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="hidden md:flex items-center gap-2 hover:bg-orange-50 pl-2 pr-4 py-1.5 rounded-full transition-all border border-transparent hover:border-orange-100"
                     aria-label="User menu"
-                    aria-expanded={isUserMenuOpen ? 'true' : 'false'}
+                    {...(isUserMenuOpen ? { 'aria-expanded': true } : { 'aria-expanded': false })}
                     aria-haspopup="true"
                   >
                  <Image src={avatar} width={32} height={32} className="rounded-full border border-gray-200" alt="Avatar" unoptimized={avatar?.includes('pravatar.cc')}/>
@@ -431,8 +453,41 @@ const App: React.FC = () => {
 
                   {/* Trip Type Selector (Flights only) */}
                   {activeVertical === 'flights' && (
-                    <div className="mb-4">
+                    <div className="mb-4 space-y-3">
                       <TripTypeSelector value={tripType} onChange={setTripType} />
+                      
+                      {/* Nearby Airports Toggle */}
+                      {tripType !== 'multi-city' && (
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <input
+                            type="checkbox"
+                            id="nearby-airports"
+                            checked={includeNearbyAirports}
+                            onChange={(e) => setIncludeNearbyAirports(e.target.checked)}
+                            className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 focus:ring-2"
+                          />
+                          <label htmlFor="nearby-airports" className="text-sm font-semibold text-gray-700 cursor-pointer flex items-center gap-2">
+                            <MapPin size={16} className="text-orange-500" />
+                            Include nearby airports
+                            <span className="text-xs text-gray-500 font-normal">(More options, potentially better prices)</span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Multi-city Flight Form */}
+                  {activeVertical === 'flights' && tripType === 'multi-city' && (
+                    <div className="mb-4">
+                      <MultiCityFlightForm
+                        segments={flightSegments}
+                        onChange={setFlightSegments}
+                        onDateChange={(index, date) => {
+                          const updated = [...flightSegments];
+                          updated[index] = { ...updated[index], date };
+                          setFlightSegments(updated);
+                        }}
+                      />
                     </div>
                   )}
 
@@ -466,18 +521,33 @@ const App: React.FC = () => {
                        />
                      </div>
                      
-                     {/* Date Range */}
+                     {/* Date Range - Use FlexibleDatePicker for flights, regular for others */}
                      <div className="md:col-span-3">
-                        <DateRangePicker 
-                          startDate={startDate} 
-                          endDate={endDate}
-                          showEndDate={activeVertical !== 'flights' || tripType === 'round-trip'}
-                          onChange={(start, end) => {
-                            setStartDate(start);
-                            setEndDate(end);
-                          }}
-                          error={errors.startDate || errors.endDate}
-                        />
+                        {activeVertical === 'flights' ? (
+                          <FlexibleDatePicker
+                            startDate={startDate}
+                            endDate={endDate}
+                            showEndDate={tripType === 'round-trip'}
+                            flexibleDays={flexibleDays}
+                            onChange={(start, end, days) => {
+                              setStartDate(start);
+                              setEndDate(end);
+                              if (days !== undefined) setFlexibleDays(days);
+                            }}
+                            error={errors.startDate || errors.endDate}
+                          />
+                        ) : (
+                          <DateRangePicker 
+                            startDate={startDate} 
+                            endDate={endDate}
+                            showEndDate={true}
+                            onChange={(start, end) => {
+                              setStartDate(start);
+                              setEndDate(end);
+                            }}
+                            error={errors.startDate || errors.endDate}
+                          />
+                        )}
                      </div>
 
                      {/* Travelers */}
@@ -518,6 +588,23 @@ const App: React.FC = () => {
             <aside className="hidden lg:block space-y-6">
                {searchHasRun && (
                  <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                    <SavedTripsPanel
+                      userId={userProfile?.id}
+                      onLoadTrip={(trip) => {
+                        // Load trip data into search form
+                        setActiveVertical(trip.vertical);
+                        if (trip.search_params.origin) setOrigin(trip.search_params.origin);
+                        setDestination(trip.search_params.destination);
+                        if (trip.search_params.startDate) setStartDate(new Date(trip.search_params.startDate));
+                        if (trip.search_params.endDate) setEndDate(new Date(trip.search_params.endDate));
+                        if (trip.search_params.tripType) setTripType(trip.search_params.tripType);
+                        if (trip.flexible_days) setFlexibleDays(trip.flexible_days);
+                        if (trip.flight_segments) setFlightSegments(trip.flight_segments);
+                        // Trigger search
+                        setTimeout(() => handleSearch(), 100);
+                      }}
+                    />
+                    
                     <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-gray-900 flex items-center gap-2">
@@ -568,13 +655,36 @@ const App: React.FC = () => {
                )}
                
                {!searchHasRun && (
-                 <div className="bg-gradient-to-br from-orange-50 to-white p-6 rounded-2xl border border-orange-100 shadow-sm">
-                   <h3 className="text-orange-900 font-bold mb-3 text-lg">Why AloTrips?</h3>
-                   <ul className="text-sm text-gray-700 space-y-3">
-                     <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>Compare hundreds of sites</li>
-                     <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>Best Value EPC Engine</li>
-                     <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>No hidden booking fees</li>
-                   </ul>
+                 <>
+                   <div className="bg-gradient-to-br from-orange-50 to-white p-6 rounded-2xl border border-orange-100 shadow-sm">
+                     <h3 className="text-orange-900 font-bold mb-3 text-lg">Why AloTrips?</h3>
+                     <ul className="text-sm text-gray-700 space-y-3">
+                       <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>Compare hundreds of sites</li>
+                       <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>Best Value EPC Engine</li>
+                       <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>No hidden booking fees</li>
+                     </ul>
+                   </div>
+                   <button
+                     onClick={() => setShowWishlist(!showWishlist)}
+                     className="w-full bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all flex items-center justify-between group"
+                   >
+                     <div className="flex items-center gap-3">
+                       <Heart size={20} className="text-red-500 fill-red-500" />
+                       <span className="font-semibold text-gray-900">My Wishlist</span>
+                     </div>
+                     <ArrowRight size={16} className="text-gray-400 group-hover:text-orange-500 group-hover:translate-x-1 transition-all" />
+                   </button>
+                   <SavedTripsPanel userId={userProfile?.id} />
+                 </>
+               )}
+               
+               {/* Wishlist Panel */}
+               {showWishlist && (
+                 <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                   <WishlistPanel 
+                     userId={userProfile?.id} 
+                     onClose={() => setShowWishlist(false)}
+                   />
                  </div>
                )}
             </aside>
@@ -721,7 +831,37 @@ const App: React.FC = () => {
 
                {/* Initial State Content: Deal Showcase */}
                {!searchHasRun && (
-                 <DealShowcase />
+                 <>
+                   {/* Member Deals Section */}
+                   {userProfile && userProfile.tier && (
+                     <div className="mb-10">
+                       <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-6 mb-6">
+                         <div className="flex items-center justify-between mb-4">
+                           <div>
+                             <h3 className="text-xl font-black text-gray-900 mb-1 flex items-center gap-2">
+                               <Star size={20} className="text-purple-500 fill-purple-500" />
+                               {userProfile.tier} Member Exclusive Deals
+                             </h3>
+                             <p className="text-sm text-gray-600">Special prices just for you</p>
+                           </div>
+                           <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wide">
+                             {userProfile.tier}
+                           </span>
+                         </div>
+                         <p className="text-sm text-gray-600">
+                           Log in to see exclusive member prices on select offers. Look for the <span className="font-bold text-purple-600">Member</span> badge!
+                         </p>
+                       </div>
+                     </div>
+                   )}
+                   <DealShowcase />
+                   <div className="mt-10">
+                     <PopularDestinations />
+                   </div>
+                   <div className="mt-10">
+                     <CrossVerticalLinks destination={destination} />
+                   </div>
+                 </>
                )}
             </div>
           </main>

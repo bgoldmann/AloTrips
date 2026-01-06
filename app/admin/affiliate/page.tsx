@@ -186,6 +186,9 @@ export default function AffiliateDashboard() {
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="px-3 py-2 border border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+                  aria-label="Start date filter"
+                  title="Start date filter"
+                  placeholder="YYYY-MM-DD"
                 />
               </div>
               <div>
@@ -196,6 +199,9 @@ export default function AffiliateDashboard() {
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="px-3 py-2 border border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none text-sm"
+                  aria-label="End date filter"
+                  title="End date filter"
+                  placeholder="YYYY-MM-DD"
                 />
               </div>
               {(startDate || endDate) && (
